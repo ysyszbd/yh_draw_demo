@@ -115,7 +115,6 @@ let foresight = ref(),
   animationFrameId = ref(null);
 drawWorker.onmessage = (e) => {
   if (e.data.sign === "draw_bev&objs") {
-    console.log(e.data, "--------------------");
     // 这里要拿取原始地址的键对象
     let weak_key_res = MemoryPool.weakKeys.find((item) => {
       return item.id === e.data.key.id;
@@ -170,7 +169,7 @@ const ws = new Ws("ws://192.168.1.160:1234", true, async (e) => {
       object = decode(e.data);
       let key = object[0];
       if (video_ok_key.value > 0 && key > video_ok_key.value) {
-        console.log(object, "object", Date.now());
+        // console.log(object, "object", Date.now());
         let weak_id = { id: key }; // sign 0:只有视频、没有障碍物;1:障碍物和视频都有;2：只有障碍物没有视频
         let weak_key_res = MemoryPool.weakKeys.find((item) => {
           return item.id === key;
@@ -179,7 +178,7 @@ const ws = new Ws("ws://192.168.1.160:1234", true, async (e) => {
         if (!weak_key_res) {
           MemoryPool.weakKeys.push(weak_id);
         } else {
-          weak_id = weak_key_res
+          weak_id = weak_key_res;
         }
         if (object[2][1] !== 0 && object[2][2] !== 0) {
           drawWorker.postMessage({
@@ -210,7 +209,9 @@ const ws = new Ws("ws://192.168.1.160:1234", true, async (e) => {
 
 animate();
 function animate() {
-  updateVideo();
+  if (MemoryPool.weakKeys.length > 5) {
+    updateVideo();
+  }
   animationFrameId.value = requestAnimationFrame(() => animate());
 }
 // 更新视频--按照视频帧
@@ -219,48 +220,48 @@ async function updateVideo() {
     let key = MemoryPool.weakKeys[0];
     // 判断6路视频是否都已经离屏渲染并存放完毕
     if (
-      (MemoryPool.objs.has(key) &&
-        MemoryPool.bevs.has(key) &&
-        MemoryPool.hasVideoObjs(key)) &&
+      MemoryPool.objs.has(key) &&
+      MemoryPool.bevs.has(key) &&
+      MemoryPool.hasVideoObjs(key) &&
       MemoryPool.hasVideo(key)
     ) {
-    key = MemoryPool.getWeakKeys();
-    let objs = MemoryPool.allocate(key, "obj"),
-      info = MemoryPool.allocate(key, "bev"),
-      bevs_point = MemoryPool.allocate(key, "bevs_point");
-    Promise.all([
-      await BEV.value.drawBev({
-        objs: objs ? objs : null,
-        info: info ? info : null,
-        bevs_point: bevs_point ? bevs_point : null,
-      }),
-      await foresight.value.drawVideo({
-        bg: MemoryPool.allocate(key, "v_bgs", "foresight"),
-        obj: MemoryPool.allocate(key, "video_objs", "foresight"),
-      }),
-      await right_front.value.drawVideo({
-        bg: MemoryPool.allocate(key, "v_bgs", "right_front"),
-        obj: MemoryPool.allocate(key, "video_objs", "right_front"),
-      }),
-      await left_front.value.drawVideo({
-        bg: MemoryPool.allocate(key, "v_bgs", "left_front"),
-        obj: MemoryPool.allocate(key, "video_objs", "left_front"),
-      }),
-      await rearview.value.drawVideo({
-        bg: MemoryPool.allocate(key, "v_bgs", "rearview"),
-        obj: MemoryPool.allocate(key, "video_objs", "rearview"),
-      }),
-      await left_back.value.drawVideo({
-        bg: MemoryPool.allocate(key, "v_bgs", "left_back"),
-        obj: MemoryPool.allocate(key, "video_objs", "left_back"),
-      }),
-      await right_back.value.drawVideo({
-        bg: MemoryPool.allocate(key, "v_bgs", "right_back"),
-        obj: MemoryPool.allocate(key, "video_objs", "right_back"),
-      }),
-    ]).then((res) => {
-      key = null;
-    });
+      key = MemoryPool.getWeakKeys();
+      let objs = MemoryPool.allocate(key, "obj"),
+        info = MemoryPool.allocate(key, "bev"),
+        bevs_point = MemoryPool.allocate(key, "bevs_point");
+      Promise.all([
+        await foresight.value.drawVideo({
+          bg: MemoryPool.allocate(key, "v_bgs", "foresight"),
+          obj: MemoryPool.allocate(key, "video_objs", "foresight"),
+        }),
+        await right_front.value.drawVideo({
+          bg: MemoryPool.allocate(key, "v_bgs", "right_front"),
+          obj: MemoryPool.allocate(key, "video_objs", "right_front"),
+        }),
+        await left_front.value.drawVideo({
+          bg: MemoryPool.allocate(key, "v_bgs", "left_front"),
+          obj: MemoryPool.allocate(key, "video_objs", "left_front"),
+        }),
+        await rearview.value.drawVideo({
+          bg: MemoryPool.allocate(key, "v_bgs", "rearview"),
+          obj: MemoryPool.allocate(key, "video_objs", "rearview"),
+        }),
+        await left_back.value.drawVideo({
+          bg: MemoryPool.allocate(key, "v_bgs", "left_back"),
+          obj: MemoryPool.allocate(key, "video_objs", "left_back"),
+        }),
+        await right_back.value.drawVideo({
+          bg: MemoryPool.allocate(key, "v_bgs", "right_back"),
+          obj: MemoryPool.allocate(key, "video_objs", "right_back"),
+        }),
+        await BEV.value.drawBev({
+          objs: objs ? objs : null,
+          info: info ? info : null,
+          bevs_point: bevs_point ? bevs_point : null,
+        }),
+      ]).then((res) => {
+        key = null;
+      });
     }
   }
 }
@@ -272,7 +273,6 @@ async function updataVideoStatus(message) {
       if (!value) res++;
     }
     if (!video_status_ok.value[message.view]) {
-      console.log(message.view, "=====", message.key);
       video_status_ok.value[message.view] = true;
     }
     if (res > 1) return;
@@ -286,7 +286,6 @@ async function updataVideoStatus(message) {
   let weak_key_res = MemoryPool.weakKeys.find((item) => {
     return item.id === message.key;
   });
-  console.log(weak_key_res, "weak_key_res", message.key, MemoryPool.weakKeys);
   // 这里要确保键对象地址一致
   if (!weak_key_res) return;
   MemoryPool.setData(weak_key_res, message.info, "v_bgs", message.view);

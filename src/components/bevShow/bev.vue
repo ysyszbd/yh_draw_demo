@@ -21,7 +21,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
   Bev.value.ObserverInstance.removeAll();
-  Bev.value.clearFun();
+  // Bev.value.clearFun();
   // Bev.value = null;
 });
 defineExpose({

@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-28 17:41:58
+ * @LastEditTime: 2024-03-28 19:14:35
  * @Description:
  */
 import * as THREE from "three";
@@ -79,7 +79,7 @@ export default class bevImgContorl {
   async getData(data) {
     try {
       if (!data.info) return;
-      console.log(data, "data]]]");
+      // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
         this.initLanesGroup();
         if (this.bev.dom.width != data.info.width)
@@ -146,7 +146,7 @@ export default class bevImgContorl {
     // 处理坐标数据
     const points = [];
     pointsArr.forEach((item) => {
-      points.push(-item[1]/2, item[0]/2, 0);
+      points.push(-item[1], item[0], 0);
       // points.push(-item[1] * 60 / 200, item[0]* 60 / 200, 0);
       // points.push((30-item[1])*200/60, (30-item[0])*200/60, 0);
 
