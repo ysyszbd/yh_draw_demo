@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-28 19:14:35
+ * @LastEditTime: 2024-03-29 14:21:11
  * @Description:
  */
 import * as THREE from "three";
@@ -78,25 +78,26 @@ export default class bevImgContorl {
   // 更新bev
   async getData(data) {
     try {
-      if (!data.info) return;
-      // console.log(data, "data]]]");
+      if (!data.bevs_point) return;
+      console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
         this.initLanesGroup();
-        if (this.bev.dom.width != data.info.width)
-          this.bev.dom.width = data.info.width;
-
-        if (this.bev.dom.height != data.info.height)
-          this.bev.dom.height = data.info.height;
-
-        // this.bev.ctx.drawImage(data.bevs_point, 0, 0);
-        this.bev.ctx.drawImage(data.info, 0, 0);
-        this.lines = new THREE.Group();
-        this.mapBg.needsUpdate = true;
-        for (let i = 0; i < data.bevs_point.length; i++) {
-          this.lines.add(this.setWidthLine(data.bevs_point[i][1]));
+        if (data?.info) {
+          this.bev.ctx.drawImage(data.info, 0, 0);
+          this.mapBg.needsUpdate = true;
         }
-        this.scene.add(this.lines);
-        await this.handleObjs(data.objs);
+        if (data.bevs_point) {
+          this.lines = new THREE.Group();
+          for (let i = 0; i < data?.bevs_point.length; i++) {
+            this.lines.add(this.setWidthLine(data.bevs_point[i][1]));
+          }
+          this.scene.add(this.lines);
+          
+        }
+        if (data.objs) {
+          await this.handleObjs(data.objs);
+          
+        }
         resolve("ppp");
       });
     } catch (err) {

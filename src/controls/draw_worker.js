@@ -5,8 +5,8 @@ onmessage = async (e) => {
   if (e.data.sign === "draw_bev&objs") {
     // console.log(e.data, "e.data");
     let bev_imageBitmap = await drawBev(e.data.bev, e.data.key);
+    // let a = await handleObjsFun(e.data.basic_data, e.data.objs);
     let v_obj = await handleObjsPoints(e.data.basic_data, e.data.objs);
-    // let bev = await drawBevPoint(e.data.bevs_point, e.data.key);
     let view = {
       foresight: await drawVideoObjs(v_obj, "foresight", e.data.key),
       rearview: await drawVideoObjs(v_obj, "rearview", e.data.key),
@@ -21,8 +21,6 @@ onmessage = async (e) => {
       imageBitmap: bev_imageBitmap,
       objs_imageBitmap: view,
       objs: await handleObjs(e.data.objs),
-      bev: e.data?.bevs_point
-      // bev: e.data?.bevs_point ? await drawBevPoint(e.data?.bevs_point) : null
     });
   }
 };
@@ -31,40 +29,11 @@ map.set(0, [80, 82, 79, 1]);
 map.set(1, [255, 255, 255, 1]);
 map.set(2, [0, 255, 0, 1]);
 map.set(3, [255, 0, 0, 1]);
-let bev_can = new OffscreenCanvas(200, 200),
-  bev_ctx = bev_can.getContext("2d");
-function drawBevPoint(points) {
-  return new Promise((resolve, reject) => {
-    points.filter(item => {
-      bev_ctx.beginPath();
-      bev_ctx.lineWidth = "1"; //线条 宽度
-      bev_ctx.strokeStyle = "red";
-      bev_ctx.moveTo(item[1][0], item[1][1]);
-      for (let i = 1; i < item[1].length; i++) {
-        // console.log(item[1][i], "item", i);
-        bev_ctx.lineTo(item[1][i][0], item[1][i][1]);
-      }
-      bev_ctx.stroke();
-      // bev_ctx.closePath();
-    })
-    resolve(bev_can.transferToImageBitmap())
-  })
-}
 let bev_canvas = new OffscreenCanvas(200, 200),
   bev_context = bev_canvas.getContext("2d");
 // 渲染bev
 function drawBev(bev, key) {
   return new Promise((resolve, reject) => {
-    let imgData = new ImageData(200, 200);
-    for (let i = 0; i < imgData.data.length; i += 4) {
-      let num = bev[i / 4];
-      let color = map.get(num);
-      imgData.data[i + 0] = color[0];
-      imgData.data[i + 1] = color[1];
-      imgData.data[i + 2] = color[2];
-      imgData.data[i + 3] = 255;
-    }
-    bev_context.putImageData(imgData, 0, 0);
     bev_context.fillStyle = "white";
     bev_context.fillRect(10, 20, 180, 30);
     bev_context.font = "24px serif";
@@ -85,6 +54,26 @@ let box_color = {
   "5-0": "rgb(0, 255,  0)",
   "5-1": "rgb(0,  128, 128)",
 };
+let view = {
+    0: "foresight",
+    3: "rearview",
+    1: "right_front",
+    5: "right_back",
+    4: "left_back",
+    2: "left_front",
+  },
+  k = {},
+  ext = {};
+function handleObjsFun(basic, objs) {
+  console.log(objs, "item[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[");
+  return new Promise((resolve, reject) => {
+    objs.forEach(async (item, index) => {
+      let eight = await GetBoundingBoxPoints(...item.slice(0, 6), item[9], basic[4], basic[3]);
+
+    });
+    resolve();
+  });
+}
 let v_objs_canvas = new OffscreenCanvas(960, 480),
   v_objs_cxt = v_objs_canvas.getContext("2d");
 // 各view渲染障碍物
@@ -141,8 +130,8 @@ let view_i = {
 async function handleObjsPoints(base, objs) {
   return new Promise(async (resolve, reject) => {
     for (let i = 0; i < 6; i++) {
-      K[view_i[i]] = mat3.fromValues(...base[4][i]);
-      ext_lidar2cam[view_i[i]] = mat4.fromValues(...base[3][i]);
+      K[view_i[i]] = base[4][i];
+      ext_lidar2cam[view_i[i]] = mat4.invert(mat4.create(), base[3][i]);
     }
     for (let j = 0; j < objs.length; j++) {
       let data = {
@@ -168,15 +157,12 @@ async function handleObjsPoints(base, objs) {
       data.points_eight.filter((item) => {
         let pt_cam_z;
         for (let e in view_sign) {
-          const inverseMatrix = mat4.create();
-          mat4.invert(inverseMatrix, ext_lidar2cam[e]);
-
-          const transposeMatrix = construct2DArray(inverseMatrix, 4, 4);
+          const transposeMatrix = ext_lidar2cam[e];
           pt_cam_z =
-            item[0] * transposeMatrix[2][0] +
-            item[1] * transposeMatrix[2][1] +
-            item[2] * transposeMatrix[2][2] +
-            transposeMatrix[2][3];
+            item[0] * transposeMatrix[8] +
+            item[1] * transposeMatrix[9] +
+            item[2] * transposeMatrix[10] +
+            transposeMatrix[11];
           if (pt_cam_z < 0.2) {
             view_sign[e]++;
           }
@@ -201,31 +187,26 @@ async function handleObjsPoints(base, objs) {
 // 将3d坐标转换为2D坐标
 // ext转为4*4，k转为3*3
 function project_lidar2img(pts, ext_lidar2cam, K, scale, crop) {
-  // 逆转矩阵
-  const inverseMatrix = mat4.create();
-  mat4.invert(inverseMatrix, ext_lidar2cam);
-  ext_lidar2cam = construct2DArray(inverseMatrix, 4, 4);
-  K = construct2DArray(K, 3, 3);
   const pt_cam_x =
-    pts[0] * ext_lidar2cam[0][0] +
-    pts[1] * ext_lidar2cam[0][1] +
-    pts[2] * ext_lidar2cam[0][2] +
-    ext_lidar2cam[0][3];
+    pts[0] * ext_lidar2cam[0] +
+    pts[1] * ext_lidar2cam[1] +
+    pts[2] * ext_lidar2cam[2] +
+    ext_lidar2cam[3];
   const pt_cam_y =
-    pts[0] * ext_lidar2cam[1][0] +
-    pts[1] * ext_lidar2cam[1][1] +
-    pts[2] * ext_lidar2cam[1][2] +
-    ext_lidar2cam[1][3];
+    pts[0] * ext_lidar2cam[4] +
+    pts[1] * ext_lidar2cam[5] +
+    pts[2] * ext_lidar2cam[6] +
+    ext_lidar2cam[7];
   const pt_cam_z =
-    pts[0] * ext_lidar2cam[2][0] +
-    pts[1] * ext_lidar2cam[2][1] +
-    pts[2] * ext_lidar2cam[2][2] +
-    ext_lidar2cam[2][3];
+    pts[0] * ext_lidar2cam[8] +
+    pts[1] * ext_lidar2cam[9] +
+    pts[2] * ext_lidar2cam[10] +
+    ext_lidar2cam[11];
   const x_u = pt_cam_x / Math.abs(pt_cam_z);
   const y_u = pt_cam_y / Math.abs(pt_cam_z);
 
-  const x = K[0][0] * x_u + K[0][2];
-  const y = K[1][1] * y_u + K[1][2];
+  const x = K[0] * x_u + K[2];
+  const y = K[4] * y_u + K[5];
   const x_scale = scale[0] * x;
   const y_scale = scale[1] * y;
 
@@ -241,7 +222,7 @@ function project_lidar2img(pts, ext_lidar2cam, K, scale, crop) {
 //  | /    | /
 // pt6 -- pt7
 // 计算盒子的8个点坐标
-function GetBoundingBoxPoints(x, y, z, w, l, h, r_z) {
+function GetBoundingBoxPoints(x, y, z, w, l, h, r_z, k, ext) {
   return new Promise(async (resolve, reject) => {
     const cos_a = Math.cos(r_z - Math.PI / 2);
     const sin_a = Math.sin(r_z - Math.PI / 2);

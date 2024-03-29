@@ -31,8 +31,17 @@ export default class MemoryPool {
     this.bevs = new WeakMap();
     this.bevs_point = new WeakMap();
     this.weakKeys = [];
+    this.startKey = [];
     this.objects = new WeakMap();
   }
+  setDateObject(key, block) {
+    this.objects.set(key, block);
+  }
+  getDateObject(key) {
+    this.objects.get(key);
+    this.objects.delete(key);
+  }
+
   // 从内存池中获取内存块
   allocate(key, sign, view) {
     let res;
