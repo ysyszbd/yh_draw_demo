@@ -3,23 +3,23 @@ const mat4 = glMatrix.mat4;
 const mat3 = glMatrix.mat3;
 onmessage = async (e) => {
   if (e.data.sign === "draw_bev&objs") {
-    // console.log(e.data, "e.data");
     let bev_imageBitmap = await drawBev(e.data.bev, e.data.key);
     // let a = await handleObjsFun(e.data.basic_data, e.data.objs);
     let v_obj = await handleObjsPoints(e.data.basic_data, e.data.objs);
-    let view = {
-      foresight: await drawVideoObjs(v_obj, "foresight", e.data.key),
-      rearview: await drawVideoObjs(v_obj, "rearview", e.data.key),
-      right_front: await drawVideoObjs(v_obj, "right_front", e.data.key),
-      right_back: await drawVideoObjs(v_obj, "right_back", e.data.key),
-      left_back: await drawVideoObjs(v_obj, "left_back", e.data.key),
-      left_front: await drawVideoObjs(v_obj, "left_front", e.data.key),
-    };
+    // let view = {
+    //   foresight: await drawVideoObjs(v_obj, "foresight", e.data.key),
+    //   rearview: await drawVideoObjs(v_obj, "rearview", e.data.key),
+    //   right_front: await drawVideoObjs(v_obj, "right_front", e.data.key),
+    //   right_back: await drawVideoObjs(v_obj, "right_back", e.data.key),
+    //   left_back: await drawVideoObjs(v_obj, "left_back", e.data.key),
+    //   left_front: await drawVideoObjs(v_obj, "left_front", e.data.key),
+    // };
     postMessage({
       sign: e.data.sign,
       key: e.data.key,
       imageBitmap: bev_imageBitmap,
-      objs_imageBitmap: view,
+      v_obj: v_obj,
+      // objs_imageBitmap: view,
       objs: await handleObjs(e.data.objs),
     });
   }
@@ -65,7 +65,6 @@ let view = {
   k = {},
   ext = {};
 function handleObjsFun(basic, objs) {
-  console.log(objs, "item[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[");
   return new Promise((resolve, reject) => {
     objs.forEach(async (item, index) => {
       let eight = await GetBoundingBoxPoints(...item.slice(0, 6), item[9], basic[4], basic[3]);

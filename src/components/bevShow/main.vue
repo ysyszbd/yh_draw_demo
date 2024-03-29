@@ -116,6 +116,7 @@ let foresight = ref(),
 drawWorker.onmessage = (e) => {
   if (e.data.sign === "draw_bev&objs") {
     // 这里要拿取原始地址的键对象
+    // console.log(e.data, "e.data");
     // let weak_id = e.data.key;
     let weak_key_res = MemoryPool.startKey.find((item) => {
       return item.id === e.data.key.id;
@@ -127,42 +128,44 @@ drawWorker.onmessage = (e) => {
     MemoryPool.setData(weak_key_res, e.data.imageBitmap, "bev");
 
     MemoryPool.setData(weak_key_res, e.data.objs, "obj");
-    MemoryPool.setData(
-      weak_key_res,
-      e.data.objs_imageBitmap["foresight"],
-      "video_objs",
-      "foresight"
-    );
-    MemoryPool.setData(
-      weak_key_res,
-      e.data.objs_imageBitmap["rearview"],
-      "video_objs",
-      "rearview"
-    );
-    MemoryPool.setData(
-      weak_key_res,
-      e.data.objs_imageBitmap["right_front"],
-      "video_objs",
-      "right_front"
-    );
-    MemoryPool.setData(
-      weak_key_res,
-      e.data.objs_imageBitmap["right_back"],
-      "video_objs",
-      "right_back"
-    );
-    MemoryPool.setData(
-      weak_key_res,
-      e.data.objs_imageBitmap["left_back"],
-      "video_objs",
-      "left_back"
-    );
-    MemoryPool.setData(
-      weak_key_res,
-      e.data.objs_imageBitmap["left_front"],
-      "video_objs",
-      "left_front"
-    );
+    MemoryPool.setData(weak_key_res, e.data.v_obj, "v_objs");
+
+    // MemoryPool.setData(
+    //   weak_key_res,
+    //   e.data.objs_imageBitmap["foresight"],
+    //   "video_objs",
+    //   "foresight"
+    // );
+    // MemoryPool.setData(
+    //   weak_key_res,
+    //   e.data.objs_imageBitmap["rearview"],
+    //   "video_objs",
+    //   "rearview"
+    // );
+    // MemoryPool.setData(
+    //   weak_key_res,
+    //   e.data.objs_imageBitmap["right_front"],
+    //   "video_objs",
+    //   "right_front"
+    // );
+    // MemoryPool.setData(
+    //   weak_key_res,
+    //   e.data.objs_imageBitmap["right_back"],
+    //   "video_objs",
+    //   "right_back"
+    // );
+    // MemoryPool.setData(
+    //   weak_key_res,
+    //   e.data.objs_imageBitmap["left_back"],
+    //   "video_objs",
+    //   "left_back"
+    // );
+    // MemoryPool.setData(
+    //   weak_key_res,
+    //   e.data.objs_imageBitmap["left_front"],
+    //   "video_objs",
+    //   "left_front"
+    // );
   }
 };
 const props = defineProps(["initStatus"]);
@@ -294,27 +297,33 @@ async function updateVideo() {
     Promise.all([
       await foresight.value.drawVideo({
         bg: MemoryPool.allocate(key, "v_bgs", "foresight"),
-        obj: MemoryPool.allocate(key, "video_objs", "foresight"),
+        obj: MemoryPool.allocate(key, "v_objs"),
+        key: key.id
       }),
       await right_front.value.drawVideo({
         bg: MemoryPool.allocate(key, "v_bgs", "right_front"),
-        obj: MemoryPool.allocate(key, "video_objs", "right_front"),
+        obj: MemoryPool.allocate(key, "v_objs"),
+        key: key.id
       }),
       await left_front.value.drawVideo({
         bg: MemoryPool.allocate(key, "v_bgs", "left_front"),
-        obj: MemoryPool.allocate(key, "video_objs", "left_front"),
+        obj: MemoryPool.allocate(key, "v_objs"),
+        key: key.id
       }),
       await rearview.value.drawVideo({
         bg: MemoryPool.allocate(key, "v_bgs", "rearview"),
-        obj: MemoryPool.allocate(key, "video_objs", "rearview"),
+        obj: MemoryPool.allocate(key, "v_objs"),
+        key: key.id
       }),
       await left_back.value.drawVideo({
         bg: MemoryPool.allocate(key, "v_bgs", "left_back"),
-        obj: MemoryPool.allocate(key, "video_objs", "left_back"),
+        obj: MemoryPool.allocate(key, "v_objs"),
+        key: key.id
       }),
       await right_back.value.drawVideo({
         bg: MemoryPool.allocate(key, "v_bgs", "right_back"),
-        obj: MemoryPool.allocate(key, "video_objs", "right_back"),
+        obj: MemoryPool.allocate(key, "v_objs"),
+        key: key.id
       }),
       await BEV.value.drawBev({
         objs: objs ? objs : null,
@@ -323,6 +332,7 @@ async function updateVideo() {
       }),
     ]).then((res) => {
       MemoryPool.startKey.shift();
+      MemoryPool.v_objs.delete(key);
       key = null;
     });
     // }

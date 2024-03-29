@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-28 13:39:58
+ * @LastEditTime: 2024-03-29 16:21:28
  * @Description:./
  */
 export default class Video {
@@ -15,6 +15,20 @@ export default class Video {
   old_wh = {
     w: 0,
     h: 0,
+  };
+  v_objs_canvas = new OffscreenCanvas(960, 480);
+  v_objs_cxt = null;
+  box_color = {
+    "0-0": "rgb(255, 0, 128)",
+    "1-0": "rgb(0, 128, 255)",
+    "1-1": "rgb(0,  255,  255)",
+    "2-0": "rgb(150,  30, 150)",
+    "2-1": "rgb(255,  0,  128)",
+    "3-0": "rgb(192, 67, 100)",
+    "4-0": "rgb(255, 255, 0)",
+    "4-1": "rgb(255,  128,   0)",
+    "5-0": "rgb(0, 255,  0)",
+    "5-1": "rgb(0,  128, 128)",
   };
   constructor(id) {
     this.init(id);
@@ -33,24 +47,17 @@ export default class Video {
     this.id = id;
   }
   async drawVideo(data) {
+    // console.log(data, "data")
     // 使用canvas外部的元素来控制canvas的大小
     let w = 940;
     let h = 480;
     if (w != this.old_wh.w || h != this.old_wh.h) {
-      let wh_obj = this.handleWH(
-        w,
-        h,
-        this.dom_w,
-        this.dom_h
-      );
+      let wh_obj = this.handleWH(w, h, this.dom_w, this.dom_h);
       this.old_wh = wh_obj;
       this.handle_box.style.width = wh_obj.w + "px";
       this.handle_box.style.height = wh_obj.h + "px";
     }
-    if (
-      this.helper_dom.width != w ||
-      this.helper_dom.height != h
-    ) {
+    if (this.helper_dom.width != w || this.helper_dom.height != h) {
       this.helper_dom.width = w;
       this.helper_dom.height = h;
     }
@@ -60,9 +67,53 @@ export default class Video {
       data.bg.close();
     }
     if (data.obj) {
-      this.helper_ctx.drawImage(data.obj, 0, 0, w, h);
-      data.obj.close();
+      let objs = await this.drawVideoObjs(data.obj, this.id, data.key);
+      // console.log(objs, "objs")
+      this.helper_ctx.drawImage(objs, 0, 0, w, h);
+      // this.helper_ctx.drawImage(data.obj, 0, 0, w, h);
+      // data.obj.close();
+      objs.close();
     }
+  }
+  drawVideoObjs(objs, view, key) {
+    return new Promise((resolve, reject) => {
+      this.v_objs_cxt = this.v_objs_canvas.getContext("2d");
+      objs.filter((item) => {
+        let color = this.box_color[`${item[7]}-${item[8]}`];
+        let obj_data = item[item.length - 1][view];
+        let arr = obj_data.filter((item) => {
+          return item[0] === -1 && item[1] === -1;
+        });
+        if (arr.length === 8) return;
+        this.v_objs_cxt.beginPath();
+        this.v_objs_cxt.lineWidth = "1.4"; //线条 宽度
+        this.v_objs_cxt.strokeStyle = color;
+        this.v_objs_cxt.moveTo(obj_data[0][0], obj_data[0][1]); //移动到某个点；
+        this.v_objs_cxt.lineTo(obj_data[1][0], obj_data[1][1]);
+        this.v_objs_cxt.lineTo(obj_data[5][0], obj_data[5][1]);
+        this.v_objs_cxt.lineTo(obj_data[7][0], obj_data[7][1]);
+        this.v_objs_cxt.lineTo(obj_data[6][0], obj_data[6][1]);
+        this.v_objs_cxt.lineTo(obj_data[2][0], obj_data[2][1]);
+        this.v_objs_cxt.lineTo(obj_data[3][0], obj_data[3][1]);
+        this.v_objs_cxt.lineTo(obj_data[1][0], obj_data[1][1]);
+        this.v_objs_cxt.moveTo(obj_data[0][0], obj_data[0][1]);
+        this.v_objs_cxt.lineTo(obj_data[2][0], obj_data[2][1]);
+        this.v_objs_cxt.moveTo(obj_data[0][0], obj_data[0][1]);
+        this.v_objs_cxt.lineTo(obj_data[4][0], obj_data[4][1]);
+        this.v_objs_cxt.lineTo(obj_data[6][0], obj_data[6][1]);
+        this.v_objs_cxt.moveTo(obj_data[4][0], obj_data[4][1]);
+        this.v_objs_cxt.lineTo(obj_data[5][0], obj_data[5][1]);
+        this.v_objs_cxt.moveTo(obj_data[3][0], obj_data[3][1]);
+        this.v_objs_cxt.lineTo(obj_data[7][0], obj_data[7][1]);
+        this.v_objs_cxt.stroke(); //描边
+      });
+      this.v_objs_cxt.fillStyle = "white";
+      this.v_objs_cxt.fillRect(10, 20, 180, 30);
+      this.v_objs_cxt.font = "24px serif";
+      this.v_objs_cxt.fillStyle = "green";
+      this.v_objs_cxt.fillText(key, 10, 40);
+      resolve(this.v_objs_canvas.transferToImageBitmap());
+    });
   }
   // 计算视频要放置在dom元素中的宽高--按照视频帧的比例来
   handleWH(imgW, imgH, domW, domH) {

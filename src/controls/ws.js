@@ -7,9 +7,10 @@ export default class Ws {
 
   webSocketInit = (url, isBin, fn, reconnect, webSocketInit) => {
     var ws = new WebSocket(url);
-  
+    
     if (isBin) {
       ws.binaryType = 'arraybuffer';
+      console.log(ws.bufferedAmount);
     }
     ws.onopen = function () {
       console.log("已连接TCP服务器");

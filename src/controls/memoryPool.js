@@ -28,6 +28,7 @@ export default class MemoryPool {
       left_front: new WeakMap(),
     };
     this.objs = new WeakMap(); // 给分割图使用的障碍物数据
+    this.v_objs = new WeakMap(); // 给分割图使用的障碍物数据
     this.bevs = new WeakMap();
     this.bevs_point = new WeakMap();
     this.weakKeys = [];
@@ -60,6 +61,9 @@ export default class MemoryPool {
     } else if (sign === "bevs_point") {
       res = this.bevs_point.get(key);
       this.bevs_point.delete(key);
+    } else if (sign === "v_objs") {
+      res = this.v_objs.get(key);
+      // this.v_objs.delete(key);
     }
     return res;
   }
@@ -81,6 +85,8 @@ export default class MemoryPool {
     } else if (sign === "bevs_point") {
       // console.log(key, block, "key, block");
       this.bevs_point.set(key, block);
+    } else if (sign === "v_objs") {
+      this.v_objs.set(key, block);
     }
   }
   setWeakKeys(key) {

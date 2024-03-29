@@ -79,7 +79,7 @@ export default class bevImgContorl {
   async getData(data) {
     try {
       if (!data.bevs_point) return;
-      console.log(data, "data]]]");
+      // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
         this.initLanesGroup();
         if (data?.info) {
