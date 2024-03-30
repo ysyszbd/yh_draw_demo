@@ -25,6 +25,7 @@
     "postcss-pxtorem": "^6.1.0",
     "sass": "^1.70.0",
     "typescript": "^5.4.2",
-    "vite": "^5.0.8"
+    "vite": "^5.0.8",
+    "vite-plugin-cross-origin-isolation": "^0.1.6"
   }
 }

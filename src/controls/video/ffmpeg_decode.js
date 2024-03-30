@@ -11,12 +11,14 @@ let dataArray;
 let codecId = 0;
 let imageBitmap;
 async function decodeArray(u8Array, key, view) {
+  // console.log(u8Array.length, "e.data0000000000000000", key, view)
   var ptr = Module._malloc(u8Array.length * u8Array.BYTES_PER_ELEMENT);
   Module.HEAPU8.set(u8Array, ptr);
   Module._parsePkt(ptr, u8Array.length);
   Module._parsePkt(ptr, u8Array.length);
   let outputPtr = Module._getFrame();
   Module._free(ptr);
+  ptr = null;
   if (outputPtr === 0) return;
   var rgbData = new Uint8ClampedArray(
     Module.HEAPU8.subarray(
@@ -33,11 +35,15 @@ async function decodeArray(u8Array, key, view) {
   imageBitmap = await drawVideoBg(rgbObj, key);
   let message = {
     type: "image",
+    // info: rgbObj,
     info: imageBitmap,
     key: key,
     view: view,
   };
-  postMessage(message, [rgbObj.rgb.buffer]);
+  // if (view === "foresight") {
+  //   console.log(key, "-------------解码完成，传回主线程的子组件", Date.now());
+  // }
+  postMessage(message, [imageBitmap]);
 }
 onmessage = function (e) {
   if ("updateCodecId" == e.data.type) {
@@ -49,6 +55,11 @@ onmessage = function (e) {
       Module._close();
       Module._init(codecId);
     }
+    // console.log(e.data, "e.data");
+    // if (e.data.view === "foresight") {
+    //   console.log(e.data.key, "-------------拿到数据，开始解码", Date.now());
+    // }
+    
     decodeArray(e.data.video_data, e.data.key, e.data.view);
   }
 };

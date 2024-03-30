@@ -42,7 +42,7 @@ onUnmounted(() => {
 <template>
   <div class="main_box">
     <!-- <loading /> -->
-    <loading v-if="!all_status" class="loading_page"/>
+    <!-- <loading v-if="!all_status" class="loading_page"/> -->
     <mainPage :initStatus="all_status" class="main_page" />
   </div>
 </template>

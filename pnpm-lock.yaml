@@ -52,6 +52,9 @@ devDependencies:
   vite:
     specifier: ^5.0.8
     version: registry.npmmirror.com/vite@5.0.8(@types/node@20.11.28)(sass@1.70.0)
+  vite-plugin-cross-origin-isolation:
+    specifier: ^0.1.6
+    version: 0.1.6
 
 packages:
 
@@ -605,6 +608,10 @@ packages:
       escalade: 3.1.2
       picocolors: 1.0.0
     dev: false
+
+  /vite-plugin-cross-origin-isolation@0.1.6:
+    resolution: {integrity: sha512-OY0naW9nPUDrKTffYnY7FRYXOgZdHoNwMGpPxUmj/n32mGZi01fcq+J536jkmwGWX7DLT95XBQVHHbrAJzTvrw==, tarball: https://registry.npmmirror.com/vite-plugin-cross-origin-isolation/-/vite-plugin-cross-origin-isolation-0.1.6.tgz}
+    dev: true
 
   /zrender@5.5.0:
     resolution: {integrity: sha512-O3MilSi/9mwoovx77m6ROZM7sXShR/O/JIanvzTwjN3FORfLSr81PsUGd7jlaYOeds9d8tw82oP44+3YucVo+w==, tarball: https://registry.npmmirror.com/zrender/-/zrender-5.5.0.tgz}

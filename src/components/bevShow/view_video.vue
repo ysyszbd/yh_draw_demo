@@ -1,5 +1,5 @@
 <!--
- * @LastEditTime: 2024-03-28 10:15:49
+ * @LastEditTime: 2024-03-30 16:50:43
  * @Description: 
 -->
 <template>
@@ -46,13 +46,17 @@ function drawVideo(data) {
 function postVideo(u8Array, key, view) {
   return new Promise((resolve, reject) => {
     if (view != props.video_id) return;
-    video_work.postMessage({
+    let params = {
       video_data: u8Array,
       view: props.video_id,
       key: key,
-    });
-    resolve(`通知${view}解码~`)
-  })
+    };
+    // if (props.video_id === "foresight") {
+    //   console.log(key, "-------------通知解码", Date.now());
+    // }
+    video_work.postMessage(params);
+    resolve(`通知${view}解码~`);
+  });
 }
 function initVideoWork() {
   video_work.onmessage = (event) => {
@@ -69,6 +73,13 @@ function initVideoWork() {
       if (info.width == 0 || info.height == 0) {
         return;
       }
+      // if (props.video_id === "foresight") {
+      //   console.log(
+      //     message.key,
+      //     "-------------子组件拿到解码后的数据",
+      //     Date.now()
+      //   );
+      // }
       emits("updataVideoStatus", message);
     }
   };

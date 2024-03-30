@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-29 14:21:11
+ * @LastEditTime: 2024-03-30 15:09:43
  * @Description:
  */
 import * as THREE from "three";
@@ -148,9 +148,6 @@ export default class bevImgContorl {
     const points = [];
     pointsArr.forEach((item) => {
       points.push(-item[1], item[0], 0);
-      // points.push(-item[1] * 60 / 200, item[0]* 60 / 200, 0);
-      // points.push((30-item[1])*200/60, (30-item[0])*200/60, 0);
-
     });
     return points;
   }
@@ -289,11 +286,13 @@ export default class bevImgContorl {
     this.scene.background = new THREE.Color().setHSL(0.6, 0, 1);
     this.scene.fog = new THREE.Fog(this.scene.background, 1, 5000);
     let rect = this.rgb_data.dom.getBoundingClientRect();
-    var width = rect.width;
-    var height =
-      rect.height -
-      40 -
-      document.getElementById("page_title").getBoundingClientRect().height;
+    // console.log(rect, "rect");
+    var width = rect.width * document.documentElement.clientWidth / 1080 - 26;
+    var height = rect.height * document.documentElement.clientWidth / 1080 - 26;
+    // var height =
+    //   rect.height -
+    //   40 -
+    //   document.getElementById("page_title").getBoundingClientRect().height;
     this.camera = new THREE.PerspectiveCamera(80, width / height, 1, 10000);
     // this.camera.position.set(0, 0, 6);
     this.camera.position.set(0, -15, 6);
@@ -379,6 +378,7 @@ export default class bevImgContorl {
         "bicycle",
         "pedestrian",
         "street_cone",
+        
       ];
       const res = await Promise.all(filesArr.map(this.loadFile));
       this.objs.start = true;

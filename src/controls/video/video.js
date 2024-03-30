@@ -1,4 +1,8 @@
 /*
+ * @LastEditTime: 2024-03-30 14:29:50
+ * @Description:
+ */
+/*
  * @LastEditTime: 2024-03-29 16:21:28
  * @Description:./
  */
@@ -16,6 +20,9 @@ export default class Video {
     w: 0,
     h: 0,
   };
+  v_canvas = new OffscreenCanvas(960, 480);
+  v_context = null;
+  imgData;
   v_objs_canvas = new OffscreenCanvas(960, 480);
   v_objs_cxt = null;
   box_color = {
@@ -37,8 +44,8 @@ export default class Video {
   init(id) {
     this.dom = document.getElementById(id);
     let rect = this.dom.getBoundingClientRect();
-    this.dom_w = rect.width;
-    this.dom_h = rect.height;
+    this.dom_w = rect.width  * document.documentElement.clientWidth / 1080;
+    this.dom_h = rect.height  * document.documentElement.clientWidth / 1080;
     this.handle_box = document.getElementById(id + "_box");
     this.helper_dom = document.getElementById(id + "_helper_box");
     this.helper_ctx = this.helper_dom.getContext("2d", {
@@ -47,7 +54,6 @@ export default class Video {
     this.id = id;
   }
   async drawVideo(data) {
-    // console.log(data, "data")
     // 使用canvas外部的元素来控制canvas的大小
     let w = 940;
     let h = 480;
@@ -61,17 +67,14 @@ export default class Video {
       this.helper_dom.width = w;
       this.helper_dom.height = h;
     }
-    // this.helper_ctx.clearRect(0, 0, w, h);
+    this.helper_ctx.clearRect(0, 0, w, h);
     if (data.bg) {
       this.helper_ctx.drawImage(data.bg, 0, 0, w, h);
       data.bg.close();
     }
     if (data.obj) {
       let objs = await this.drawVideoObjs(data.obj, this.id, data.key);
-      // console.log(objs, "objs")
       this.helper_ctx.drawImage(objs, 0, 0, w, h);
-      // this.helper_ctx.drawImage(data.obj, 0, 0, w, h);
-      // data.obj.close();
       objs.close();
     }
   }

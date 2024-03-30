@@ -3,23 +3,11 @@ const mat4 = glMatrix.mat4;
 const mat3 = glMatrix.mat3;
 onmessage = async (e) => {
   if (e.data.sign === "draw_bev&objs") {
-    let bev_imageBitmap = await drawBev(e.data.bev, e.data.key);
-    // let a = await handleObjsFun(e.data.basic_data, e.data.objs);
-    let v_obj = await handleObjsPoints(e.data.basic_data, e.data.objs);
-    // let view = {
-    //   foresight: await drawVideoObjs(v_obj, "foresight", e.data.key),
-    //   rearview: await drawVideoObjs(v_obj, "rearview", e.data.key),
-    //   right_front: await drawVideoObjs(v_obj, "right_front", e.data.key),
-    //   right_back: await drawVideoObjs(v_obj, "right_back", e.data.key),
-    //   left_back: await drawVideoObjs(v_obj, "left_back", e.data.key),
-    //   left_front: await drawVideoObjs(v_obj, "left_front", e.data.key),
-    // };
     postMessage({
       sign: e.data.sign,
       key: e.data.key,
-      imageBitmap: bev_imageBitmap,
-      v_obj: v_obj,
-      // objs_imageBitmap: view,
+      imageBitmap: await drawBev(e.data.bev, e.data.key),
+      v_obj: await handleObjsPoints(e.data.basic_data, e.data.objs),
       objs: await handleObjs(e.data.objs),
     });
   }
@@ -36,9 +24,9 @@ function drawBev(bev, key) {
   return new Promise((resolve, reject) => {
     bev_context.fillStyle = "white";
     bev_context.fillRect(10, 20, 180, 30);
-    bev_context.font = "24px serif";
+    bev_context.font = "18px serif";
     bev_context.fillStyle = "blue";
-    bev_context.fillText(key.id, 10, 40);
+    bev_context.fillText(key, 10, 40);
     resolve(bev_canvas.transferToImageBitmap());
   });
 }
@@ -109,7 +97,7 @@ function drawVideoObjs(objs, view, key) {
     });
     v_objs_cxt.fillStyle = "white";
     v_objs_cxt.fillRect(10, 20, 180, 30);
-    v_objs_cxt.font = "24px serif";
+    v_objs_cxt.font = "20px serif";
     v_objs_cxt.fillStyle = "green";
     v_objs_cxt.fillText(key.id, 10, 40);
     resolve(v_objs_canvas.transferToImageBitmap());

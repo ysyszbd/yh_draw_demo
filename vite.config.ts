@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-28 16:54:12
+ * @LastEditTime: 2024-03-29 16:42:30
  * @Description:
  */
 import { defineConfig } from "vite";
@@ -7,10 +7,14 @@ import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 import postcssPx2Rem from "postcss-pxtorem";
 import autoprefixer from "autoprefixer";
+import crossOriginIsolation from 'vite-plugin-cross-origin-isolation'
 
 export default defineConfig({
+  server: {
+    host: "0.0.0.0",
+  },
   base: "./",
-  plugins: [vue()],
+  plugins: [vue(), crossOriginIsolation()],
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),

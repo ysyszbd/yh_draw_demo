@@ -1,5 +1,5 @@
 <!--
- * @LastEditTime: 2024-03-27 18:06:14
+ * @LastEditTime: 2024-03-30 15:10:36
  * @Description: 
 -->
 <template>
@@ -20,7 +20,7 @@ onMounted(() => {
   Bev.value = new bevImgControl();
 });
 onUnmounted(() => {
-  Bev.value.ObserverInstance.removeAll();
+  // Bev.value.ObserverInstance.removeAll();
   // Bev.value.clearFun();
   // Bev.value = null;
 });
@@ -31,12 +31,14 @@ defineExpose({
 
 <style lang="scss" scoped>
 .rbg_demo {
-  width: 100%;
-  height: 100%;
+  width: 260px;
+  height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px !important;
+  background: url("@/assets/images/bev_bg.png") no-repeat;
+  background-size: 100% 100%;
   box-sizing: border-box;
   canvas {
     width: 100% !important;
