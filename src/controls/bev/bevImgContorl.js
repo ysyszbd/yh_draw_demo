@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-30 15:09:43
+ * @LastEditTime: 2024-03-30 19:23:29
  * @Description:
  */
 import * as THREE from "three";
@@ -11,6 +11,7 @@ import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import skyVertexShader from "@/assets/shader/skyVertexShader.vs?raw";
 import skyFragmentShader from "@/assets/shader/skyFragmentShader.fs?raw";
 import roadFragmentShader from "@/assets/shader/roadFragmentShader.fs?raw";
+import { handleObjs } from "@/controls/box2img.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
@@ -95,7 +96,7 @@ export default class bevImgContorl {
           
         }
         if (data.objs) {
-          await this.handleObjs(data.objs);
+          await this.handleObjs(await handleObjs(data.objs));
           
         }
         resolve("ppp");
@@ -147,7 +148,7 @@ export default class bevImgContorl {
     // 处理坐标数据
     const points = [];
     pointsArr.forEach((item) => {
-      points.push(-item[1], item[0], 0);
+      points.push(-item[1] * 30/ 51.2, item[0] * 30/ 51.2, 0);
     });
     return points;
   }
@@ -306,7 +307,7 @@ export default class bevImgContorl {
     this.rgb_data.dom.appendChild(this.renderer.domElement);
     this.renderer.toneMapping = THREE.ReinhardToneMapping;
     this.renderer.toneMappingExposure = 2.0;
-    this.setMesh();
+    // this.setMesh();
     this.setAmbientLight();
     this.setControls();
     this.addSky();

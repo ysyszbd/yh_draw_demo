@@ -3,13 +3,46 @@ const mat4 = glMatrix.mat4;
 const mat3 = glMatrix.mat3;
 onmessage = async (e) => {
   if (e.data.sign === "draw_bev&objs") {
-    postMessage({
-      sign: e.data.sign,
-      key: e.data.key,
-      imageBitmap: await drawBev(e.data.bev, e.data.key),
-      v_obj: await handleObjsPoints(e.data.basic_data, e.data.objs),
-      objs: await handleObjs(e.data.objs),
-    });
+    let v_objs = await handleObjsPoints(e.data.basic_data, e.data.objs);
+    let f_imageBitmap = await drawVideoObjs(v_objs, "foresight", e.data.key),
+      r_imageBitmap = await drawVideoObjs(v_objs, "rearview", e.data.key),
+      rf_imageBitmap = await drawVideoObjs(v_objs, "right_front", e.data.key),
+      rb_imageBitmap = await drawVideoObjs(v_objs, "right_back", e.data.key),
+      lb_imageBitmap = await drawVideoObjs(v_objs, "left_back", e.data.key),
+      lf_imageBitmap = await drawVideoObjs(v_objs, "left_front", e.data.key);
+    let bev_imageBitmap = await drawBev(e.data.key);
+    postMessage(
+      {
+        sign: e.data.sign,
+        key: e.data.key,
+        imageBitmap: bev_imageBitmap,
+        v_obj: {
+          foresight: f_imageBitmap,
+          rearview: r_imageBitmap,
+          right_front: rf_imageBitmap,
+          right_back: rb_imageBitmap,
+          left_back: lb_imageBitmap,
+          left_front: lf_imageBitmap,
+        },
+      },
+      [
+        bev_imageBitmap,
+        f_imageBitmap,
+        r_imageBitmap,
+        rf_imageBitmap,
+        rb_imageBitmap,
+        lb_imageBitmap,
+        lf_imageBitmap,
+      ]
+    );
+    v_objs = null;
+    f_imageBitmap = null;
+    r_imageBitmap = null;
+    rf_imageBitmap = null;
+    rb_imageBitmap = null;
+    lb_imageBitmap = null;
+    lf_imageBitmap = null;
+    bev_imageBitmap = null;
   }
 };
 let map = new Map();
@@ -20,7 +53,7 @@ map.set(3, [255, 0, 0, 1]);
 let bev_canvas = new OffscreenCanvas(200, 200),
   bev_context = bev_canvas.getContext("2d");
 // 渲染bev
-function drawBev(bev, key) {
+function drawBev(key) {
   return new Promise((resolve, reject) => {
     bev_context.fillStyle = "white";
     bev_context.fillRect(10, 20, 180, 30);
@@ -55,8 +88,12 @@ let view = {
 function handleObjsFun(basic, objs) {
   return new Promise((resolve, reject) => {
     objs.forEach(async (item, index) => {
-      let eight = await GetBoundingBoxPoints(...item.slice(0, 6), item[9], basic[4], basic[3]);
-
+      let eight = await GetBoundingBoxPoints(
+        ...item.slice(0, 6),
+        item[9],
+        basic[4],
+        basic[3]
+      );
     });
     resolve();
   });
@@ -69,10 +106,7 @@ function drawVideoObjs(objs, view, key) {
     objs.filter((item) => {
       let color = box_color[`${item[7]}-${item[8]}`];
       let obj_data = item[item.length - 1][view];
-      let arr = obj_data.filter((item) => {
-        return item[0] === -1 && item[1] === -1;
-      });
-      if (arr.length === 8) return;
+      if (obj_data.length <= 0) return;
       v_objs_cxt.beginPath();
       v_objs_cxt.lineWidth = "1.4"; //线条 宽度
       v_objs_cxt.strokeStyle = color;
@@ -99,7 +133,7 @@ function drawVideoObjs(objs, view, key) {
     v_objs_cxt.fillRect(10, 20, 180, 30);
     v_objs_cxt.font = "20px serif";
     v_objs_cxt.fillStyle = "green";
-    v_objs_cxt.fillText(key.id, 10, 40);
+    v_objs_cxt.fillText(key, 10, 40);
     resolve(v_objs_canvas.transferToImageBitmap());
   });
 }
@@ -155,19 +189,20 @@ async function handleObjsPoints(base, objs) {
           }
         }
       });
-      data.points_eight.filter((item) => {
-        for (let e in view_sign) {
-          if (view_sign[e] === 8) {
-            data[e].push([-1, -1]);
-          } else {
+      for (let e in view_sign) {
+        if (view_sign[e] === 8) {
+          data[e] = [];
+        } else {
+          data.points_eight.filter((item) => {
             data[e].push(
               project_lidar2img(item, ext_lidar2cam[e], K[e], base[5], base[6])
             );
-          }
+          });
         }
-      });
+      }
       objs[j].push(data);
     }
+    // console.log(objs, "objs");
     resolve(objs);
   });
 }
@@ -288,6 +323,7 @@ function handleObjs(objs_data) {
         obj_index[type].data.push(item);
       }
     });
+    console.log(obj_index, "obj_index");
     resolve(obj_index);
   });
 }

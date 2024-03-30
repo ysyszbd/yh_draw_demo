@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-30 14:29:50
+ * @LastEditTime: 2024-03-30 20:39:48
  * @Description:
  */
 /*
@@ -54,6 +54,7 @@ export default class Video {
     this.id = id;
   }
   async drawVideo(data) {
+    // console.log(data,"data");
     // 使用canvas外部的元素来控制canvas的大小
     let w = 940;
     let h = 480;
@@ -73,9 +74,9 @@ export default class Video {
       data.bg.close();
     }
     if (data.obj) {
-      let objs = await this.drawVideoObjs(data.obj, this.id, data.key);
-      this.helper_ctx.drawImage(objs, 0, 0, w, h);
-      objs.close();
+      // let objs = await this.drawVideoObjs(data.obj, this.id, data.key);
+      this.helper_ctx.drawImage(data.obj, 0, 0, w, h);
+      data.obj.close();
     }
   }
   drawVideoObjs(objs, view, key) {

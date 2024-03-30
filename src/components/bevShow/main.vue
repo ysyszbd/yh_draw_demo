@@ -90,6 +90,7 @@ import {
 import { ObserverInstance } from "@/controls/event/observer";
 import Ws from "@/controls/ws.js";
 import { decode } from "@msgpack/msgpack";
+import { handleObjs } from "@/controls/box2img.js";
 import memoryPool from "@/controls/memoryPool.js";
 
 let foresight = ref(),
@@ -122,8 +123,12 @@ drawWorker.onmessage = (e) => {
   if (e.data.sign === "draw_bev&objs") {
     // 这里要拿取原始地址的键对象
     MemoryPool.bevsBgMap.set(e.data.key, e.data.imageBitmap);
-    MemoryPool.newObjsMap.set(e.data.key, e.data.objs);
-    MemoryPool.newOVMap.set(e.data.key, e.data.v_obj);
+    MemoryPool.setOVimg(e.data.key, e.data.v_obj["foresight"], "foresight");
+    MemoryPool.setOVimg(e.data.key, e.data.v_obj["rearview"], "rearview");
+    MemoryPool.setOVimg(e.data.key, e.data.v_obj["right_front"], "right_front");
+    MemoryPool.setOVimg(e.data.key, e.data.v_obj["right_back"], "right_back");
+    MemoryPool.setOVimg(e.data.key, e.data.v_obj["left_back"], "left_back");
+    MemoryPool.setOVimg(e.data.key, e.data.v_obj["left_front"], "left_front");
   }
 };
 const props = defineProps(["initStatus"]);
@@ -183,7 +188,6 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
           MemoryPool.setInitVideo(key, object[1][2], "left_front");
         }
         if (object[2][1] != 0) {
-          MemoryPool.bevsMap.set(key, object[3]);
           MemoryPool.bpMap.set(key, object[5]);
           MemoryPool.objsMap.set(key, object[4]);
           MemoryPool.besicMap.set(key, object[2]);
@@ -199,7 +203,7 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
 });
 animate();
 async function animate() {
-  if (MemoryPool.keys.length > 3) {
+  if (MemoryPool.keys.length > 2) {
     let key = MemoryPool.keys.shift();
     MemoryPool.startK.push(key);
     // console.log(MemoryPool.videosMap["foresight"], "ppppppppppppp")
@@ -242,13 +246,10 @@ async function animate() {
       drawWorker.postMessage({
         sign: "draw_bev&objs",
         key: key,
-        bev: MemoryPool.bevsMap.get(key),
         objs: MemoryPool.objsMap.get(key),
         basic_data: MemoryPool.besicMap.get(key),
       });
-      MemoryPool.bevsMap.delete(key);
       MemoryPool.besicMap.delete(key);
-      MemoryPool.objsMap.delete(key);
     }
   }
   animationFrameId.value = requestAnimationFrame(() => animate());
@@ -258,58 +259,53 @@ async function animate() {
 async function updateVideo() {
   return new Promise(async (resolve, reject) => {
     let key = MemoryPool.startK[0];
-    let objs = MemoryPool.newObjsMap.get(key),
+    let objs = MemoryPool.objsMap.get(key),
       bev = MemoryPool.bevsBgMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
     if (MemoryPool.hasVideo(key)) {
       Promise.all([
-        await foresight.value.drawVideo({
-          bg: MemoryPool.vMap["foresight"].get(key),
-          obj: MemoryPool.newOVMap.get(key),
-          key: key,
-        }),
-        await right_front.value.drawVideo({
-          bg: MemoryPool.vMap["right_front"].get(key),
-          obj: MemoryPool.newOVMap.get(key),
-          key: key,
-        }),
-        await left_front.value.drawVideo({
-          bg: MemoryPool.vMap["left_front"].get(key),
-          obj: MemoryPool.newOVMap.get(key),
-          key: key,
-        }),
-        await rearview.value.drawVideo({
-          bg: MemoryPool.vMap["rearview"].get(key),
-          obj: MemoryPool.newOVMap.get(key),
-          key: key,
-        }),
-        await left_back.value.drawVideo({
-          bg: MemoryPool.vMap["left_back"].get(key),
-          obj: MemoryPool.newOVMap.get(key),
-          key: key,
-        }),
-        await right_back.value.drawVideo({
-          bg: MemoryPool.vMap["right_back"].get(key),
-          obj: MemoryPool.newOVMap.get(key),
-          key: key,
-        }),
         await BEV.value.drawBev({
           objs: objs ? objs : null,
           info: bev ? bev : null,
           bevs_point: bevs_point ? bevs_point : null,
         }),
+        await foresight.value.drawVideo({
+          bg: MemoryPool.getVmap(key, "foresight"),
+          obj: MemoryPool.getOVimg(key, "foresight"),
+          key: key,
+        }),
+        await right_front.value.drawVideo({
+          bg: MemoryPool.getVmap(key, "right_front"),
+          obj: MemoryPool.getOVimg(key, "right_front"),
+          key: key,
+        }),
+        await left_front.value.drawVideo({
+          bg: MemoryPool.getVmap(key, "left_front"),
+          obj: MemoryPool.getOVimg(key, "left_front"),
+          key: key,
+        }),
+        await rearview.value.drawVideo({
+          bg: MemoryPool.getVmap(key, "rearview"),
+          obj: MemoryPool.getOVimg(key, "rearview"),
+          key: key,
+        }),
+        await left_back.value.drawVideo({
+          bg: MemoryPool.getVmap(key, "left_back"),
+          obj: MemoryPool.getOVimg(key, "left_back"),
+          key: key,
+        }),
+        await right_back.value.drawVideo({
+          bg: MemoryPool.getVmap(key, "right_back"),
+          obj: MemoryPool.getOVimg(key, "right_back"),
+          key: key,
+        }),
       ]);
       MemoryPool.startK.shift();
-      MemoryPool.newOVMap.delete(key);
       MemoryPool.bpMap.delete(key);
       MemoryPool.bevsBgMap.delete(key);
-      MemoryPool.newObjsMap.delete(key);
-      MemoryPool.vMap["right_back"].delete(key);
-      MemoryPool.vMap["left_back"].delete(key);
-      MemoryPool.vMap["rearview"].delete(key);
-      MemoryPool.vMap["left_front"].delete(key);
-      MemoryPool.vMap["right_front"].delete(key);
-      MemoryPool.vMap["foresight"].delete(key);
+      MemoryPool.delOVimg(key);
+      MemoryPool.delVmap(key);
+      MemoryPool.objsMap.delete(key);
       key = null;
     }
     resolve("");
@@ -333,7 +329,7 @@ async function updataVideoStatus(message) {
     //     Date.now()
     //   );
     // }
-    MemoryPool.vMap[message.view].set(message.key, message.info);
+    MemoryPool.setVmap(message.key, message.info, message.view);
   } else {
     video_status_ok.value[message.view] = true;
     if (
