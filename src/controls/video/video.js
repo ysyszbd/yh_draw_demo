@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-30 20:39:48
+ * @LastEditTime: 2024-04-01 15:44:23
  * @Description:
  */
 /*
@@ -44,8 +44,10 @@ export default class Video {
   init(id) {
     this.dom = document.getElementById(id);
     let rect = this.dom.getBoundingClientRect();
-    this.dom_w = rect.width  * document.documentElement.clientWidth / 1080;
-    this.dom_h = rect.height  * document.documentElement.clientWidth / 1080;
+    this.dom_w = rect.width  * 2;
+    this.dom_h = rect.height  * 2;
+    // this.dom_w = rect.width  * document.documentElement.clientWidth / 1080;
+    // this.dom_h = rect.height  * document.documentElement.clientWidth / 1080;
     this.handle_box = document.getElementById(id + "_box");
     this.helper_dom = document.getElementById(id + "_helper_box");
     this.helper_ctx = this.helper_dom.getContext("2d", {
@@ -54,7 +56,6 @@ export default class Video {
     this.id = id;
   }
   async drawVideo(data) {
-    // console.log(data,"data");
     // 使用canvas外部的元素来控制canvas的大小
     let w = 940;
     let h = 480;

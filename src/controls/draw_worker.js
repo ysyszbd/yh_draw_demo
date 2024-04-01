@@ -10,12 +10,10 @@ onmessage = async (e) => {
       rb_imageBitmap = await drawVideoObjs(v_objs, "right_back", e.data.key),
       lb_imageBitmap = await drawVideoObjs(v_objs, "left_back", e.data.key),
       lf_imageBitmap = await drawVideoObjs(v_objs, "left_front", e.data.key);
-    let bev_imageBitmap = await drawBev(e.data.key);
     postMessage(
       {
         sign: e.data.sign,
         key: e.data.key,
-        imageBitmap: bev_imageBitmap,
         v_obj: {
           foresight: f_imageBitmap,
           rearview: r_imageBitmap,
@@ -26,7 +24,6 @@ onmessage = async (e) => {
         },
       },
       [
-        bev_imageBitmap,
         f_imageBitmap,
         r_imageBitmap,
         rf_imageBitmap,
@@ -42,7 +39,6 @@ onmessage = async (e) => {
     rb_imageBitmap = null;
     lb_imageBitmap = null;
     lf_imageBitmap = null;
-    bev_imageBitmap = null;
   }
 };
 let map = new Map();
@@ -129,11 +125,11 @@ function drawVideoObjs(objs, view, key) {
       v_objs_cxt.lineTo(obj_data[7][0], obj_data[7][1]);
       v_objs_cxt.stroke(); //描边
     });
-    v_objs_cxt.fillStyle = "white";
-    v_objs_cxt.fillRect(10, 20, 180, 30);
-    v_objs_cxt.font = "20px serif";
-    v_objs_cxt.fillStyle = "green";
-    v_objs_cxt.fillText(key, 10, 40);
+    // v_objs_cxt.fillStyle = "white";
+    // v_objs_cxt.fillRect(10, 20, 180, 30);
+    // v_objs_cxt.font = "20px serif";
+    // v_objs_cxt.fillStyle = "green";
+    // v_objs_cxt.fillText(key, 10, 40);
     resolve(v_objs_canvas.transferToImageBitmap());
   });
 }

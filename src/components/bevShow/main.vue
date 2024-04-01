@@ -80,6 +80,14 @@ import Bev from "@/components/bevShow/bev.vue";
 import echartsYH from "@/components/bevShow/echarts.vue";
 import echartAxis from "@/components/bevShow/echartAxis.vue";
 import {
+  openDB,
+  addData,
+  getDataByKey,
+  deleteDBAll,
+  closeDB,
+  deleteDB,
+} from "@/controls/DB.js";
+import {
   ref,
   inject,
   defineProps,
@@ -102,11 +110,16 @@ let foresight = ref(),
   BEV = ref(),
   MemoryPool = new memoryPool(),
   drawWorker = new Worker(
-    new URL("../../controls/draw_worker.js", import.meta.url, {
-      type: "module",
-    })
+    new URL("../../controls/draw_worker.js", import.meta.url)
   ),
+  // dataWorker = new Worker(
+  //   new URL("../../controls/DB_worker.js", import.meta.url),
+  //   {
+  //     type: "module",
+  //   }
+  // ),
   time = ref(),
+  videos_db = ref(null),
   stop = ref(false),
   video_ok_key = ref(-1),
   video_start = ref(false),
@@ -119,10 +132,59 @@ let foresight = ref(),
     left_front: false,
   }),
   animationFrameId = ref(null);
+onMounted(() => {
+  // dataWorker.postMessage({
+  //   sign: "del_db",
+  // });
+  // dataWorker.postMessage({
+  //   sign: "init",
+  // });
+});
+// dataWorker.onmessage = async (e) => {
+//   // console.log(e, "e-----------------");
+//   if (e.data.sign === "get_video") {
+//     let key = e.data.params.key;
+//     Promise.all([
+//       await foresight.value.postVideo(
+//         e.data.params["foresight"],
+//         key,
+//         "foresight"
+//       ),
+//       await right_front.value.postVideo(
+//         e.data.params["right_front"],
+//         key,
+//         "right_front"
+//       ),
+//       await left_front.value.postVideo(
+//         e.data.params["left_front"],
+//         key,
+//         "left_front"
+//       ),
+//       await rearview.value.postVideo(
+//         e.data.params["rearview"],
+//         key,
+//         "rearview"
+//       ),
+//       await left_back.value.postVideo(
+//         e.data.params["left_back"],
+//         key,
+//         "left_back"
+//       ),
+//       await right_back.value.postVideo(
+//         e.data.params["right_back"],
+//         key,
+//         "right_back"
+//       ),
+//     ]);
+//     dataWorker.postMessage({
+//       sign: "del_video",
+//       key: key,
+//     });
+//   }
+// };
 drawWorker.onmessage = (e) => {
   if (e.data.sign === "draw_bev&objs") {
     // 这里要拿取原始地址的键对象
-    MemoryPool.bevsBgMap.set(e.data.key, e.data.imageBitmap);
     MemoryPool.setOVimg(e.data.key, e.data.v_obj["foresight"], "foresight");
     MemoryPool.setOVimg(e.data.key, e.data.v_obj["rearview"], "rearview");
     MemoryPool.setOVimg(e.data.key, e.data.v_obj["right_front"], "right_front");
@@ -138,7 +200,6 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
     if (!props.initStatus) return;
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
-
       if (video_ok_key.value < 0) {
         // 唤醒解码器
         if (object[1].length > 0) {
@@ -178,8 +239,19 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
           return item === key;
         });
         if (!k && object[1].length > 0) MemoryPool.keys.push(key);
-        // console.log(object);
         if (object[1].length > 0) {
+          // dataWorker.postMessage({
+          //   sign: "set_video",
+          //   params: {
+          //     key: key,
+          //     foresight: MemoryPool.handleVideo(object[1][0]),
+          //     rearview: MemoryPool.handleVideo(object[1][3]),
+          //     right_front: MemoryPool.handleVideo(object[1][1]),
+          //     right_back: MemoryPool.handleVideo(object[1][5]),
+          //     left_back: MemoryPool.handleVideo(object[1][4]),
+          //     left_front: MemoryPool.handleVideo(object[1][2]),
+          //   },
+          // });
           MemoryPool.setInitVideo(key, object[1][0], "foresight");
           MemoryPool.setInitVideo(key, object[1][3], "rearview");
           MemoryPool.setInitVideo(key, object[1][1], "right_front");
@@ -192,7 +264,7 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
           MemoryPool.objsMap.set(key, object[4]);
           MemoryPool.besicMap.set(key, object[2]);
         }
-        if (MemoryPool.startK.length > 4) {
+        if (MemoryPool.videosMap["foresight"].size > 2) {
           await updateVideo();
         }
       }
@@ -203,11 +275,13 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
 });
 animate();
 async function animate() {
-  if (MemoryPool.keys.length > 2) {
+  if (MemoryPool.keys.length > 1) {
     let key = MemoryPool.keys.shift();
     MemoryPool.startK.push(key);
-    // console.log(MemoryPool.videosMap["foresight"], "ppppppppppppp")
-    // console.log(key, "-------------通知子组件解码", Date.now());
+    // dataWorker.postMessage({
+    //   sign: "get_video",
+    //   key: key,
+    // });
     Promise.all([
       await foresight.value.postVideo(
         MemoryPool.getInitVideo(key, "foresight"),
@@ -239,9 +313,7 @@ async function animate() {
         key,
         "right_back"
       ),
-    ]).then((res) => {
-      MemoryPool.delInitVideo(key);
-    });
+    ]);
     if (MemoryPool.objsMap.has(key)) {
       drawWorker.postMessage({
         sign: "draw_bev&objs",
@@ -260,51 +332,48 @@ async function updateVideo() {
   return new Promise(async (resolve, reject) => {
     let key = MemoryPool.startK[0];
     let objs = MemoryPool.objsMap.get(key),
-      bev = MemoryPool.bevsBgMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
     if (MemoryPool.hasVideo(key)) {
       Promise.all([
         await BEV.value.drawBev({
           objs: objs ? objs : null,
-          info: bev ? bev : null,
           bevs_point: bevs_point ? bevs_point : null,
         }),
         await foresight.value.drawVideo({
-          bg: MemoryPool.getVmap(key, "foresight"),
+          bg: MemoryPool.getInitVideo(key, "foresight"),
           obj: MemoryPool.getOVimg(key, "foresight"),
           key: key,
         }),
         await right_front.value.drawVideo({
-          bg: MemoryPool.getVmap(key, "right_front"),
+          bg: MemoryPool.getInitVideo(key, "right_front"),
           obj: MemoryPool.getOVimg(key, "right_front"),
           key: key,
         }),
         await left_front.value.drawVideo({
-          bg: MemoryPool.getVmap(key, "left_front"),
+          bg: MemoryPool.getInitVideo(key, "left_front"),
           obj: MemoryPool.getOVimg(key, "left_front"),
           key: key,
         }),
         await rearview.value.drawVideo({
-          bg: MemoryPool.getVmap(key, "rearview"),
+          bg: MemoryPool.getInitVideo(key, "rearview"),
           obj: MemoryPool.getOVimg(key, "rearview"),
           key: key,
         }),
         await left_back.value.drawVideo({
-          bg: MemoryPool.getVmap(key, "left_back"),
+          bg: MemoryPool.getInitVideo(key, "left_back"),
           obj: MemoryPool.getOVimg(key, "left_back"),
           key: key,
         }),
         await right_back.value.drawVideo({
-          bg: MemoryPool.getVmap(key, "right_back"),
+          bg: MemoryPool.getInitVideo(key, "right_back"),
           obj: MemoryPool.getOVimg(key, "right_back"),
           key: key,
         }),
       ]);
+      MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
       MemoryPool.bpMap.delete(key);
-      MemoryPool.bevsBgMap.delete(key);
       MemoryPool.delOVimg(key);
-      MemoryPool.delVmap(key);
       MemoryPool.objsMap.delete(key);
       key = null;
     }
@@ -329,7 +398,8 @@ async function updataVideoStatus(message) {
     //     Date.now()
     //   );
     // }
-    MemoryPool.setVmap(message.key, message.info, message.view);
+    MemoryPool.videosMap[message.view].set(message.key, null);
+    MemoryPool.videosMap[message.view].set(message.key, message.info);
   } else {
     video_status_ok.value[message.view] = true;
     if (
@@ -354,6 +424,9 @@ onUnmounted(() => {
   MemoryPool.clear();
   drawWorker.terminate();
   ObserverInstance.removeAll();
+  // dataWorker.postMessage({
+  //   sign: "del_db",
+  // });
   cancelAnimationFrame(animationFrameId.value);
 });
 </script>
