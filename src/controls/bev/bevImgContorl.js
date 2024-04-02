@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-01 16:41:25
+ * @LastEditTime: 2024-04-02 14:19:31
  * @Description:
  */
 import * as THREE from "three";
@@ -32,7 +32,10 @@ export default class bevImgContorl {
   renderer;
   particleSystem;
   scale = 51.2 / 30;
-  lines = null;
+  lines = {
+    geometry: null,
+    group: new THREE.Group(),
+  };
   road = null;
   objs = {
     start: false,
@@ -67,6 +70,18 @@ export default class bevImgContorl {
     street_cone: null,
     street_cone_group: new THREE.Object3D(),
     street_cone_whl: {},
+  };
+  obj_index = {
+    "0-0":  "car",
+    "1-0": "truck",
+    "1-1": "construction_vehicle",
+    "2-0": "bus",
+    "2-1": "trailer",
+    "3-0": "barrier",
+    "4-0": "motorcycle",
+    "4-1": "bicycle",
+    "5-0": "pedestrian",
+    "5-1": "street_cone",
   };
   material = null;
   geometry = null;
@@ -111,14 +126,7 @@ export default class bevImgContorl {
       if (!data.bevs_point) return;
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
-        this.initLanesGroup();
-        this.initRoadGroup();
-        if (data?.info) {
-          this.bev.ctx.drawImage(data.info, 0, 0);
-          this.mapBg.needsUpdate = true;
-        }
         if (data.bevs_point) {
-          this.lines = new THREE.Group();
           // let arr3 = data.bevs_point.filter((item) => {
           //   return item[0] === 3;
           // });
@@ -131,15 +139,7 @@ export default class bevImgContorl {
           //   this.scene.add(this.road);
           // }
           // console.log(arr3, "arr3");
-          for (let i = 0; i < data?.bevs_point.length; i++) {
-            this.lines.add(
-              this.setWidthLine(
-                data.bevs_point[i][1],
-                this.lineColors[data.bevs_point[i][0]]
-              )
-            );
-          }
-          this.scene.add(this.lines);
+          this.handleLine(data.bevs_point);
         }
         if (data.objs) {
           await this.handleObjs(await handleObjs(data.objs));
@@ -188,27 +188,16 @@ export default class bevImgContorl {
       console.log(err, "err---setMeshRoad");
     }
   }
-  // 释放线内存
-  initLanesGroup() {
-    // 释放资源
-    // 车道线是一堆线，把之前的线清除掉后再生成新的线
-    if (this.lines) {
-      this.lines.children.forEach((item) => {
-        this.scene.remove(item);
-        item.geometry.dispose();
-        item.material.dispose();
-      });
-      this.scene.remove(this.lines);
-    }
-    this.resTracker.dispose();
-    this.lines = null;
-  }
   // 绘制可以改变宽度的线条   dashed：true虚线、false实线
   setWidthLine(pointsArr, color = "rgb(80,190,225)") {
     try {
       // 处理坐标数据
       let points = this.handlePoints(pointsArr);
-      const geometry = this.track(new LineGeometry());
+      const geometry = this.track(
+        new LineGeometry({
+          linewidth: 20,
+        })
+      );
       geometry.setPositions(points);
       const matLine = this.track(
         new LineMaterial({
@@ -219,7 +208,7 @@ export default class bevImgContorl {
         })
       );
       matLine.resolution.set(window.innerWidth, window.innerHeight);
-      let line = new Line2(geometry, matLine);
+      let line = this.track(new Line2(geometry, matLine));
       line.computeLineDistances();
       return line;
     } catch (err) {
@@ -238,21 +227,71 @@ export default class bevImgContorl {
   // 更新障碍物
   async handleObjs(objs_data) {
     return new Promise((resolve, reject) => {
-      if (objs_data.length <= 0) return;
       for (let item in objs_data) {
-        if (objs_data[item].data.length > 0) {
-          // console.log(objs_data[item], "objs_data[item]");
-          this.handle3D(objs_data[item].name, objs_data[item].data);
-        } else {
-          let group = this.objs[`${objs_data[item].name}_group`];
-          group.children.forEach((item) => {
-            this.scene.remove(item);
-            group.remove(item);
-          });
-        }
+        this.handle3D(objs_data[item].name, objs_data[item].data);
       }
       resolve("---------");
     });
+  }
+  async handleLine(bevs_point) {
+    if (this.lines.group.children.length <= 0) {
+      bevs_point.forEach((item) => {
+        let line = this.setWidthLine(item[1], this.lineColors[item[0]]);
+        this.lines.group.add(line);
+      });
+      this.scene.add(this.lines.group);
+    } else {
+      if (this.lines.group.children.length >= bevs_point.length) {
+        for (let i = 0; i < bevs_point.length; i++) {
+          let points = this.handlePoints(bevs_point[i][1]);
+          // console.log(points, "points");
+          this.lines.group.children[i].geometry.setPositions(points);
+          this.lines.group.children[i].material.color.set(
+            this.lineColors[bevs_point[i][0]]
+          );
+          this.lines.group.children[i].material.needsUpdate = true;
+        }
+        if (this.lines.group.children.length > 50) {
+          for (let j = 50; j < this.lines.group.children.length; j++) {
+            this.scene.remove(this.lines.group.children[j]);
+            this.lines.group.children[j].geometry.dispose();
+            this.lines.group.children[j].material.dispose();
+            this.lines.group.remove(this.lines.group.children[j]);
+          }
+        } else {
+          for (
+            let j = bevs_point.length;
+            j < this.lines.group.children.length;
+            j++
+          ) {
+            this.lines.group.children[j].geometry.setPositions([
+              100, 100, 0, 100, 100, 0,
+            ]);
+          }
+        }
+      } else {
+        for (let i = 0; i < this.lines.group.children.length; i++) {
+          let points = this.handlePoints(bevs_point[i][1]);
+          this.lines.group.children[i].geometry.setPositions(points);
+          this.lines.group.children[i].material.color.set(
+            this.lineColors[bevs_point[i][0]]
+          );
+          this.lines.group.children[i].material.needsUpdate = true;
+        }
+        for (
+          let j = this.lines.group.children.length;
+          j < bevs_point.length;
+          j++
+        ) {
+          let line = this.setWidthLine(
+            bevs_point[j][1],
+            this.lineColors[bevs_point[j][0]]
+          );
+          this.lines.group.add(line);
+        }
+        this.scene.add(this.lines.group);
+      }
+    }
   }
   // 操作具体的障碍物
   async handle3D(type, data) {
@@ -260,8 +299,36 @@ export default class bevImgContorl {
       if (!this.objs.start) return;
       let group = this.objs[`${type}_group`],
         model = this.objs[type];
+
+      if (data.length < 0) {
+        if (group.children.length > 20) {
+          for (let j = 20; j < group.children.length; j++) {
+            this.scene.remove(group.children[j]);
+            if (group.children[j].isMesh) {
+              if (group.children[j].geometry) {
+                group.children[j].geometry.dispose();
+              }
+              if (group.children[j].material) {
+                if (Array.isArray(group.children[j].material)) {
+                  group.children[j].material.forEach((material) =>
+                    this.disposeMaterial(material)
+                  );
+                } else {
+                  this.disposeMaterial(group.children[j].material);
+                }
+              }
+            }
+            group.remove(group.children[j]);
+          }
+        } else {
+          for (let j = data.length; j < group.children.length; j++) {
+            group.children[j].position.set(100, 100, 0);
+          }
+        }
+        return;
+      }
+
       if (group.children.length <= 0) {
-        group.clear();
         for (let i = 0; i < data.length; i++) {
           let point = data[i];
           if (point[0] !== -1 && point[1] !== -1) {
@@ -293,9 +360,29 @@ export default class bevImgContorl {
             // group.children[i].scale.set(s, s, s);
             group.children[i].rotation.y = -data[i][9];
           }
-          for (let j = data.length; j < group.children.length; j++) {
-            this.scene.remove(group.children[j]);
-            group.remove(group.children[j]);
+          if (group.children.length > 20) {
+            for (let j = 20; j < group.children.length; j++) {
+              this.scene.remove(group.children[j]);
+              if (group.children[j].isMesh) {
+                if (group.children[j].geometry) {
+                  group.children[j].geometry.dispose();
+                }
+                if (group.children[j].material) {
+                  if (Array.isArray(group.children[j].material)) {
+                    group.children[j].material.forEach((material) =>
+                      this.disposeMaterial(material)
+                    );
+                  } else {
+                    this.disposeMaterial(group.children[j].material);
+                  }
+                }
+              }
+              group.remove(group.children[j]);
+            }
+          } else {
+            for (let j = data.length; j < group.children.length; j++) {
+              group.children[j].position.set(100, 100, 0);
+            }
           }
         } else {
           for (let i = 0; i < group.children.length; i++) {
@@ -332,51 +419,15 @@ export default class bevImgContorl {
       console.log(err, "err---handle3D");
     }
   }
-  // 处理语义分割的数据，拿到所有路沿的位置坐标，按行列存储
-  handleDataCanvas(bev_demo) {
-    try {
-      return new Promise((resolve, reject) => {
-        let road = [];
-        let now_h = -1;
-        let road_empty = [-1, -1];
-        for (let i = 0; i < bev_demo.length; i++) {
-          // 判断该像素点是否为路沿,如果该像素点为路沿，则将该像素点加入road所在的行列三维数组中
-          let arr = new Array(this.bev.dom.width).fill(null);
-          road.push(arr);
-          let points = [null, null];
-          if (bev_demo[i] === 0) {
-            points = this.getPoints(i, this.bev.dom.width);
-            // 找到当前行
-            if (points[0] != now_h) {
-              now_h = points[0];
-              if (road_empty[0] >= 0 && road_empty[1] < 0) {
-                road_empty[1] = now_h;
-              }
-            }
-            road[points[1]][points[0]] = points;
-            road[points[1]] = road[points[1]].filter((item) => item !== null);
-          }
-          road[i] = road[i].filter((item) => item !== null);
-          if (road[i].length === 0) {
-            if (now_h >= 0 && road_empty[0] < 0 && road_empty[1] < 0) {
-              road_empty[0] = this.getPoints(i, this.bev.dom.width)[1];
-            }
-          }
-        }
-        // console.log(road_empty, "road_empty");
-        resolve(road);
-      });
-    } catch (err) {
-      console.log(err, "err---handleDataCanvas");
-    }
-  }
-  // 获取像素的坐标点，即像素点所在的行列值
-  getPoints(i, w) {
-    let w_i = 0,
-      h_i = 0;
-    h_i = Math.floor(i / w);
-    w_i = i - w * h_i;
-    return [w_i, h_i];
+  disposeMaterial(material) {
+    material.dispose();
+    // 清除纹理
+    if (material.map) material.map.dispose();
+    if (material.lightMap) material.lightMap.dispose();
+    if (material.bumpMap) material.bumpMap.dispose();
+    if (material.normalMap) material.normalMap.dispose();
+    if (material.specularMap) material.specularMap.dispose();
+    if (material.envMap) material.envMap.dispose();
   }
   // 初始化threejs
   init() {
@@ -600,28 +651,6 @@ export default class bevImgContorl {
           reject(err);
         }
       );
-    });
-  }
-  // 加载obj格式的3d模型
-  async loadObj3D() {
-    try {
-      let obj = await this.loadObjFile("A/SM_MercedesBenzCoupeC");
-      obj.scale.set(0.01, 0.01, 0.01);
-      obj.rotation.x = Math.PI / 2;
-      obj.rotation.y = Math.PI / 2;
-      obj.position.x = 10;
-      obj.position.y = -15;
-      this.scene.add(obj);
-    } catch (err) {
-      console.log(err, "err===loadObj3D");
-    }
-  }
-  // 加载obj格式的3d模型
-  loadObjFile(name) {
-    return new Promise((resolve, reject) => {
-      new OBJLoader().load(`src/assets/objs_model/${name}.obj`, (root) => {
-        resolve(root);
-      });
     });
   }
   // 创建环境光

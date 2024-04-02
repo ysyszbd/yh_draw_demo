@@ -53,12 +53,15 @@ export default class MemoryPool {
   }
   // 删除原始video数据
   delInitVideo(key) {
-    this.videosMap["foresight"].delete(key);
-    this.videosMap["rearview"].delete(key);
-    this.videosMap["right_front"].delete(key);
-    this.videosMap["right_back"].delete(key);
-    this.videosMap["left_back"].delete(key);
-    this.videosMap["left_front"].delete(key);
+    return new Promise((resolve, reject) => {
+      this.videosMap["foresight"].delete(key);
+      this.videosMap["rearview"].delete(key);
+      this.videosMap["right_front"].delete(key);
+      this.videosMap["right_back"].delete(key);
+      this.videosMap["left_back"].delete(key);
+      this.videosMap["left_front"].delete(key);
+      resolve("删除完毕")
+    })
   }
   setOVimg(key, block, view) {
     this.ovMap[view].set(key, block);

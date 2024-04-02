@@ -1,5 +1,5 @@
 <!--
- * @LastEditTime: 2024-03-30 15:10:36
+ * @LastEditTime: 2024-04-02 10:46:59
  * @Description: 
 -->
 <template>
@@ -21,7 +21,7 @@ onMounted(() => {
 });
 onUnmounted(() => {
   // Bev.value.ObserverInstance.removeAll();
-  // Bev.value.clearFun();
+  Bev.value.clearFun();
   // Bev.value = null;
 });
 defineExpose({

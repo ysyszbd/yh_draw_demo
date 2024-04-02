@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-03-25 17:14:44
+ * @LastEditTime: 2024-04-02 14:10:43
  * @Description:
  */
 // import { K, D, ext_lidar2cam } from "../assets/demo_data/data";
@@ -180,7 +180,7 @@ export async function handleObjsPoints(base, objs) {
     resolve(objs);
   });
 }
-
+let scale = 51.2 / 30;
 // 计算障碍物信息
 export function handleObjs(objs_data) {
   return new Promise((resolve, reject) => {
@@ -202,12 +202,14 @@ export function handleObjs(objs_data) {
     objs_data.filter((item) => {
       let type = `${item[7]}-${item[8]}`;
       if (obj_index[type]) {
-        obj_index[type].data.push(item);
+        if (
+          Math.abs(item[0] * scale) <= 30 &&
+          Math.abs(item[1] * scale) <= 30
+        ) {
+          obj_index[type].data.push(item);
+        }
       }
     });
     resolve(obj_index);
   });
 }
-
-
-
