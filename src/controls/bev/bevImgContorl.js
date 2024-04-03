@@ -1,5 +1,9 @@
 /*
- * @LastEditTime: 2024-04-02 14:19:31
+ * @LastEditTime: 2024-04-03 17:06:53
+ * @Description:
+ */
+/*
+ * @LastEditTime: 2024-04-02 15:39:23
  * @Description:
  */
 import * as THREE from "three";
@@ -15,6 +19,11 @@ import { handleObjs } from "@/controls/box2img.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import {
+  CSS3DRenderer,
+  CSS3DSprite,
+  CSS3DObject,
+} from "three/examples/jsm/renderers/CSS3DRenderer.js";
 
 export default class bevImgContorl {
   resTracker = new ResourceTracker();
@@ -30,7 +39,9 @@ export default class bevImgContorl {
   scene;
   camera;
   renderer;
-  particleSystem;
+  renderer2;
+  controls;
+  controls2;
   scale = 51.2 / 30;
   lines = {
     geometry: null,
@@ -42,37 +53,48 @@ export default class bevImgContorl {
     main_car: null,
     car: null,
     car_group: new THREE.Object3D(),
+    car_tags: new THREE.Object3D(),
     car_whl: {},
     truck: null,
     truck_group: new THREE.Object3D(),
+    truck_tags: new THREE.Object3D(),
     truck_whl: {},
     construction_vehicle: null,
     construction_vehicle_group: new THREE.Object3D(),
+    construction_vehicle_tags: new THREE.Object3D(),
     construction_vehicle_whl: {},
     bus: null,
     bus_group: new THREE.Object3D(),
+    bus_tags: new THREE.Object3D(),
     bus_whl: {},
     trailer: null,
     trailer_group: new THREE.Object3D(),
+    trailer_tags: new THREE.Object3D(),
     trailer_whl: {},
     barrier: null,
     barrier_group: new THREE.Object3D(),
+    barrier_tags: new THREE.Object3D(),
     barrier_whl: {},
     motorcycle: null,
     motorcycle_group: new THREE.Object3D(),
+    motorcycle_tags: new THREE.Object3D(),
     motorcycle_whl: {},
     bicycle: null,
     bicycle_group: new THREE.Object3D(),
+    bicycle_tags: new THREE.Object3D(),
     bicycle_whl: {},
     pedestrian: null,
     pedestrian_group: new THREE.Object3D(),
+    pedestrian_tags: new THREE.Object3D(),
     pedestrian_whl: {},
     street_cone: null,
     street_cone_group: new THREE.Object3D(),
+    street_cone_tags: new THREE.Object3D(),
     street_cone_whl: {},
+    tags_group: new THREE.Object3D(),
   };
   obj_index = {
-    "0-0":  "car",
+    "0-0": "car",
     "1-0": "truck",
     "1-1": "construction_vehicle",
     "2-0": "bus",
@@ -87,19 +109,14 @@ export default class bevImgContorl {
   geometry = null;
   mesh = null;
   mapBg = null;
-  map = new Map();
-  draw_time = [];
   lineColors = {
     1: "rgba(0, 255, 255, 1)",
     2: "rgba(128, 255, 128, 1)",
     3: "rgba(192, 71, 70, 1)",
   };
+  animationFrameId = null;
 
   constructor() {
-    this.map.set(0, [80, 82, 79, 1]);
-    this.map.set(1, [255, 255, 255, 1]);
-    this.map.set(2, [0, 255, 0, 1]);
-    this.map.set(3, [255, 0, 0, 1]);
     this.rgb_data.dom = document.getElementById("bev_box");
     // 初始化three
     this.init();
@@ -297,32 +314,24 @@ export default class bevImgContorl {
   async handle3D(type, data) {
     try {
       if (!this.objs.start) return;
+      // console.log(data, "data")
       let group = this.objs[`${type}_group`],
+        tags = this.objs[`${type}_tags`],
         model = this.objs[type];
 
       if (data.length < 0) {
         if (group.children.length > 20) {
           for (let j = 20; j < group.children.length; j++) {
             this.scene.remove(group.children[j]);
-            if (group.children[j].isMesh) {
-              if (group.children[j].geometry) {
-                group.children[j].geometry.dispose();
-              }
-              if (group.children[j].material) {
-                if (Array.isArray(group.children[j].material)) {
-                  group.children[j].material.forEach((material) =>
-                    this.disposeMaterial(material)
-                  );
-                } else {
-                  this.disposeMaterial(group.children[j].material);
-                }
-              }
-            }
+            this.dispose3D(group.children[j]);
             group.remove(group.children[j]);
+            this.scene.remove(tags.children[j]);
+            tags.remove(tags.children[j]);
           }
         } else {
           for (let j = data.length; j < group.children.length; j++) {
             group.children[j].position.set(100, 100, 0);
+            tags.children[j].position.copy(group.children[j].position);
           }
         }
         return;
@@ -334,89 +343,119 @@ export default class bevImgContorl {
           if (point[0] !== -1 && point[1] !== -1) {
             let c_model = model.scene.clone();
             c_model.matrixAutoUpdate = true;
-            c_model.position.set(
-              -point[1] * this.scale,
-              point[0] * this.scale,
-              point[2] * this.scale
-            );
-            // let size = this.ge3Dsize(c_model);
-            // let s = point[5] / size.z;
-            // c_model.scale.set(s, s, s);
+            c_model.position.set(-point[1], point[0], 0);
             c_model.rotation.y = -point[9];
             group.add(c_model);
+            let label3DSprite = this.tag3DSprite(point[12]);
+            let pos3 = new THREE.Vector3();
+            c_model.getWorldPosition(pos3); //获取obj世界坐标、
+            // console.log(point, "point", pos3, c_model.position);
+            pos3.z = point[5] + 1;
+            pos3.y -= 16;
+            // console.log(pos3, "pos3");
+            label3DSprite.position.copy(pos3);
+            tags.add(label3DSprite);
           }
         }
+        this.scene.add(tags);
         this.scene.add(group);
       } else {
         if (group.children.length >= data.length) {
           for (let i = 0; i < data.length; i++) {
-            group.children[i].position.set(
-              -data[i][1] * this.scale,
-              data[i][0] * this.scale,
-              data[i][2] * this.scale
-            );
-            // let size = this.ge3Dsize(group.children[i]);
-            // let s = data[5] / size.z;
-            // group.children[i].scale.set(s, s, s);
+            group.children[i].position.set(-data[i][1], data[i][0], 0);
             group.children[i].rotation.y = -data[i][9];
+            let pos3 = new THREE.Vector3();
+            group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
+            pos3.z = data[i][5] + 1;
+            pos3.y -= 16;
+            tags.children[i].position.copy(pos3);
+            tags.children[i].element.innerHTML = data[i][12];
           }
           if (group.children.length > 20) {
             for (let j = 20; j < group.children.length; j++) {
               this.scene.remove(group.children[j]);
-              if (group.children[j].isMesh) {
-                if (group.children[j].geometry) {
-                  group.children[j].geometry.dispose();
-                }
-                if (group.children[j].material) {
-                  if (Array.isArray(group.children[j].material)) {
-                    group.children[j].material.forEach((material) =>
-                      this.disposeMaterial(material)
-                    );
-                  } else {
-                    this.disposeMaterial(group.children[j].material);
-                  }
-                }
-              }
+              this.dispose3D(group.children[j]);
               group.remove(group.children[j]);
+              this.scene.remove(tags.children[j]);
+              tags.remove(tags.children[j]);
             }
           } else {
             for (let j = data.length; j < group.children.length; j++) {
               group.children[j].position.set(100, 100, 0);
+              tags.children[j].position.copy(group.children[j].position);
             }
           }
         } else {
           for (let i = 0; i < group.children.length; i++) {
-            // let size = this.ge3Dsize(group.children[i]);
-            // let s = data[5] / size.z;
-            // group.children[i].scale.set(s, s, s);
-
-            group.children[i].position.set(
-              -data[i][1] * this.scale,
-              data[i][0] * this.scale,
-              data[i][2] * this.scale
-            );
+            group.children[i].position.set(-data[i][1], data[i][0], 0);
             group.children[i].rotation.y = -data[i][9];
+
+            let pos3 = new THREE.Vector3();
+            group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
+            pos3.z = data[i][5] + 1;
+            pos3.y -= 16;
+            tags.children[i].position.copy(pos3);
           }
 
           for (let j = group.children.length; j < data.length; j++) {
             let l_c_model = model.scene.clone();
-            // let size = this.ge3Dsize(l_c_model);
-            // let s = data[5] / size.z;
-            // l_c_model.scale.set(s, s, s);
             l_c_model.matrixAutoUpdate = true;
-            l_c_model.position.set(
-              -data[j][1] * this.scale,
-              data[j][0] * this.scale,
-              data[j][2] * this.scale
-            );
+            l_c_model.position.set(-data[j][1], data[j][0], 0);
             l_c_model.rotation.y = -data[j][9];
             group.add(l_c_model);
+            let label3DSprite = this.tag3DSprite(data[j][12]);
+            let pos3 = new THREE.Vector3();
+            l_c_model.getWorldPosition(pos3); //获取obj世界坐标、
+            pos3.z = data[j][5] + 1;
+            pos3.y -= 16;
+            label3DSprite.position.copy(pos3);
+            tags.add(label3DSprite);
           }
           this.scene.add(group);
+          this.scene.add(tags);
         }
       }
     } catch (err) {
       console.log(err, "err---handle3D");
+    }
+  }
+  // 创建一个HTML标签
+  tag3DSprite(name) {
+    // 创建div元素(作为标签)
+    let p = document.createElement("p");
+    p.innerHTML = name;
+    p.classList.add("yh_tag");
+    //div元素包装为CSS3模型对象CSS3DSprite
+    var label = new CSS3DSprite(p);
+    p.style.pointerEvents = "none"; //避免HTML标签遮挡三维场景的鼠标事件
+    p.style.boxShadow = "0 0 2px #00ffff inset";
+    p.style.background = `linear-gradient(#00ffff, #00ffff) left top,linear-gradient(#00ffff, #00ffff) left top,linear-gradient(#00ffff, #00ffff) right bottom,linear-gradient(#00ffff, #00ffff) right bottom`;
+    p.style.backgroundRepeat = "no-repeat";
+    p.style.backgroundSize = "1px 6px, 6px 1px";
+    p.style.backgroundColor = "rgba(0, 0, 0, 0.4)";
+    p.style.color = "#ffffff";
+    p.style.fontSize = "16px";
+    p.style.padding = "4px 10px";
+
+    //缩放CSS3DSprite模型对象
+    label.scale.set(0.05, 0.05, 0.05); //根据相机渲染范围控制HTML 3D标签尺寸
+    label.rotateY(Math.PI / 2); //控制HTML标签CSS3对象姿态角度
+    // label.rotateX(-Math.PI/2);
+    return label; //返回CSS3模型标签
+  }
+  // 清除3D模型
+  dispose3D(item) {
+    if (item.isMesh) {
+      if (item.geometry) {
+        item.geometry.dispose();
+      }
+      if (item.material) {
+        if (Array.isArray(item.material)) {
+          item.material.forEach((material) => this.disposeMaterial(material));
+        } else {
+          this.disposeMaterial(item.material);
+        }
+      }
     }
   }
   disposeMaterial(material) {
@@ -432,8 +471,9 @@ export default class bevImgContorl {
   // 初始化threejs
   init() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color().setHSL(0.6, 0, 1);
-    this.scene.fog = new THREE.Fog(this.scene.background, 1, 5000);
+    // this.scene.background = "rgba(255, 255, 255, 0)";
+    // this.scene.background = new THREE.Color().setHSL(0.6, 0, 1);
+    // this.scene.fog = new THREE.Fog(this.scene.background, 1, 5000);
     let rect = this.rgb_data.dom.getBoundingClientRect();
     var width = rect.width * 2 - 30;
     var height = rect.height * 2 - 30;
@@ -451,16 +491,23 @@ export default class bevImgContorl {
     this.camera.updateMatrix();
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
+      alpha: true
     });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(width, height);
+    this.renderer2 = new CSS3DRenderer();
+    this.renderer2.setSize(width, height);
+    this.renderer2.domElement.style.position = "absolute";
+    this.renderer2.domElement.style.zIndex = 2;
+
     this.rgb_data.dom.appendChild(this.renderer.domElement);
+    this.rgb_data.dom.appendChild(this.renderer2.domElement);
     this.renderer.toneMapping = THREE.ReinhardToneMapping;
     this.renderer.toneMappingExposure = 2.0;
     // this.setMesh();
     this.setAmbientLight();
     this.setControls();
-    this.addSky();
+    // this.addSky();
     this.load3D();
   }
   // 初始化bev的canvas
@@ -491,7 +538,7 @@ export default class bevImgContorl {
     );
     this.geometry = this.track(new THREE.PlaneGeometry(60, 60));
     this.mesh = new THREE.Mesh(this.geometry, this.material);
-    this.scene.add(this.mesh);
+    // this.scene.add(this.mesh);
   }
   addSky() {
     const uniforms = {
@@ -542,6 +589,15 @@ export default class bevImgContorl {
           size = box.getSize(new THREE.Vector3());
           gltf.position.y = -(size.y / 2) - center.y;
           gltf.rotation.x = Math.PI / 2;
+          // 添加CSS 3DSprite标签
+          // var label3DSprite = this.tag3DSprite("主车"); //设置标签名称
+          // var pos3 = new THREE.Vector3();
+          // gltf.getWorldPosition(pos3); //获取obj世界坐标、
+          // pos3.z += 7;
+          // pos3.y += 6;
+          // console.log(pos3, "pos3")
+          // label3DSprite.position.copy(pos3); //标签标注在obj世界坐标
+          // this.scene.add(label3DSprite); //标签插入场景
         } else if (item.id === "car") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
@@ -622,7 +678,7 @@ export default class bevImgContorl {
         if (item.id !== "main_car") {
           this.objs[`${item.id}_whl`] = this.ge3Dsize(gltf);
         }
-        this.scene.add(gltf);
+        this.scene.add(this.track(gltf));
         gltf.matrixAutoUpdate = false;
         gltf.updateMatrix();
       });
@@ -672,13 +728,15 @@ export default class bevImgContorl {
   // 添加控制器
   setControls() {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls2 = new OrbitControls(this.camera, this.renderer2.domElement);
   }
   // 渲染循环
   animate = () => {
     // 清除深度缓存---很重要
     this.renderer.clearDepth();
     this.renderer.render(this.scene, this.camera);
-    requestAnimationFrame(this.animate);
+    this.renderer2.render(this.scene, this.camera);
+    this.animationFrameId = requestAnimationFrame(this.animate);
   };
   // 绘制辅助网格、坐标
   setMesh() {
@@ -697,66 +755,27 @@ export default class bevImgContorl {
   // 清除掉所有内存
   clearFun() {
     console.log("clearFun");
-    this.objs.car_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.car_group);
-    this.objs.truck_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.truck_group);
-    this.objs.construction_vehicle_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.construction_vehicle_group);
-    this.objs.bus_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.bus_group);
-    this.objs.trailer_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.trailer_group);
-    this.objs.barrier_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.barrier_group);
-    this.objs.motorcycle_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.motorcycle_group);
-    this.objs.bicycle_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.bicycle_group);
-    this.objs.pedestrian_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.pedestrian_group);
-    this.objs.street_cone_group.children.forEach((item) => {
-      this.scene.remove(item);
-      item.geometry.dispose();
-      item.material.dispose();
-    });
-    this.scene.remove(this.objs.street_cone_group);
+    for (let item in this.objs) {
+      if (this.objs[item]?.children?.length > 0) {
+        this.objs[item]?.children.forEach((ele) => {
+          this.scene.remove(ele);
+          this.dispose3D(ele);
+        });
+        this.scene.remove(this.objs[item]);
+      }
+      if (this.objs[item]?.isVector3) {
+        this.objs[item] = {};
+      }
+    }
+    if (this.lines.group?.children.length > 0) {
+      this.lines.group?.children.forEach((ele) => {
+        this.scene.remove(ele);
+        ele.geometry.dispose();
+        ele.material.dispose();
+        this.lines.group.remove(ele);
+      });
+    }
+    cancelAnimationFrame(this.animationFrameId);
     this.resTracker.dispose();
   }
 }

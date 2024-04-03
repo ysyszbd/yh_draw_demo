@@ -124,6 +124,7 @@ onUnmounted(() => {
     left: 0;
     transform-origin: 0 0;
     z-index: 1;
+    border-radius: 5px;
   }
 }
 </style>

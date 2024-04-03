@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-02 14:10:43
+ * @LastEditTime: 2024-04-03 18:18:52
  * @Description:
  */
 // import { K, D, ext_lidar2cam } from "../assets/demo_data/data";
@@ -206,10 +206,27 @@ export function handleObjs(objs_data) {
           Math.abs(item[0] * scale) <= 30 &&
           Math.abs(item[1] * scale) <= 30
         ) {
+          //   //   // obj_index[type].data.push(item);
+          item[0] = item[0] * scale;
+          item[1] = item[1] * scale;
+          item[2] = 0;
+          // item[2] += 1.9
           obj_index[type].data.push(item);
         }
       }
     });
     resolve(obj_index);
   });
+}
+export function formaData(timer) {
+  const year = timer.getFullYear()
+  const month = timer.getMonth() + 1 // 由于月份从0开始，因此需加1
+  const day = timer.getDate()
+  const hour = timer.getHours()
+  const minute = timer.getMinutes()
+  const second = timer.getSeconds()
+  return `${pad(year, 4)}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}`
+}
+export function pad(timeEl, total = 2, str = '0') {
+  return timeEl.toString().padStart(total, str)
 }

@@ -12,7 +12,6 @@ let codecId = 0;
 let imageBitmap;
 async function decodeArray(u8Array, key, view) {
   try {
-    // console.log(u8Array.length, "e.data0000000000000000", key, view)
     var ptr = Module._malloc(u8Array.length * u8Array.BYTES_PER_ELEMENT);
     Module.HEAPU8.set(u8Array, ptr);
     Module._parsePkt(ptr, u8Array.length);

@@ -1,7 +1,7 @@
 <template>
   <div class="my_page">
     <div class="page_title">
-      <div class="title_box title_time">{{ getTime() }}</div>
+      <div class="title_box title_time">{{ now_time }}</div>
       <div class="title_text">
         <div class="big">易航智能-丹灵®BEV感知</div>
         <div class="little">W W W . Y I H A N G . A I</div>
@@ -98,7 +98,7 @@ import {
 import { ObserverInstance } from "@/controls/event/observer";
 import Ws from "@/controls/ws.js";
 import { decode } from "@msgpack/msgpack";
-import { handleObjs } from "@/controls/box2img.js";
+import { formaData } from "@/controls/box2img.js";
 import memoryPool from "@/controls/memoryPool.js";
 
 let foresight = ref(),
@@ -125,7 +125,11 @@ let foresight = ref(),
     left_back: false,
     left_front: false,
   }),
-  animationFrameId = ref(null);
+  now_time = ref(formaData(new Date())),
+  animationFrameId = ref(null),
+  object = null,
+  key = null,
+  k = null;
 drawWorker.onmessage = (e) => {
   if (e.data.sign === "draw_bev&objs") {
     MemoryPool.setOVimg(e.data.key, e.data.v_obj["foresight"], "foresight");
@@ -142,7 +146,7 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
   try {
     if (!props.initStatus) return;
     if (e.data instanceof ArrayBuffer) {
-      let object = decode(e.data);
+      object = decode(e.data);
       if (video_ok_key.value < 0) {
         // 唤醒解码器
         if (object[1].length > 0) {
@@ -176,9 +180,10 @@ const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
           ]);
         }
       }
+      // console.log(object, "object");
       if (video_ok_key.value > 0 && object[0] > video_ok_key.value) {
-        let key = object[0];
-        let k = MemoryPool.keys.find((item) => {
+        key = object[0];
+        k = MemoryPool.keys.find((item) => {
           return item === key;
         });
         if (!k && object[1].length > 0) MemoryPool.keys.push(key);
@@ -351,8 +356,8 @@ async function updataVideoStatus(message) {
 }
 getTime();
 function getTime() {
-  let t = new Date().toJSON().split("T");
-  return `${t[0]} ${t[1].split(".")[0]}`;
+  // let t = new Date();
+  return formaData(new Date());
 }
 
 onUnmounted(() => {

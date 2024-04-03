@@ -1,15 +1,25 @@
-importScripts("./gl-matrix-min.js");
-const mat4 = glMatrix.mat4;
-const mat3 = glMatrix.mat3;
+// importScripts("./gl-matrix-min.js");
+// const mat4 = glMatrix.mat4;
+
+// import { Console } from "console";
+
+// const mat3 = glMatrix.mat3;
+let v_objs,
+  f_imageBitmap,
+  r_imageBitmap,
+  rf_imageBitmap,
+  rb_imageBitmap,
+  lb_imageBitmap,
+  lf_imageBitmap;
 onmessage = async (e) => {
   if (e.data.sign === "draw_bev&objs") {
-    let v_objs = await handleObjsPoints(e.data.basic_data, e.data.objs);
-    let f_imageBitmap = await drawVideoObjs(v_objs, "foresight", e.data.key),
-      r_imageBitmap = await drawVideoObjs(v_objs, "rearview", e.data.key),
-      rf_imageBitmap = await drawVideoObjs(v_objs, "right_front", e.data.key),
-      rb_imageBitmap = await drawVideoObjs(v_objs, "right_back", e.data.key),
-      lb_imageBitmap = await drawVideoObjs(v_objs, "left_back", e.data.key),
-      lf_imageBitmap = await drawVideoObjs(v_objs, "left_front", e.data.key);
+    v_objs = await handleObjsPoints(e.data.basic_data, e.data.objs);
+    f_imageBitmap = await drawVideoObjs(v_objs, "foresight", e.data.key);
+    r_imageBitmap = await drawVideoObjs(v_objs, "rearview", e.data.key);
+    rf_imageBitmap = await drawVideoObjs(v_objs, "right_front", e.data.key);
+    rb_imageBitmap = await drawVideoObjs(v_objs, "right_back", e.data.key);
+    lb_imageBitmap = await drawVideoObjs(v_objs, "left_back", e.data.key);
+    lf_imageBitmap = await drawVideoObjs(v_objs, "left_front", e.data.key);
     postMessage(
       {
         sign: e.data.sign,
@@ -71,39 +81,33 @@ let box_color = {
   "5-0": "rgb(0, 255,  0)",
   "5-1": "rgb(0,  128, 128)",
 };
-let view = {
-    0: "foresight",
-    3: "rearview",
-    1: "right_front",
-    5: "right_back",
-    4: "left_back",
-    2: "left_front",
-  },
-  k = {},
-  ext = {};
-function handleObjsFun(basic, objs) {
-  return new Promise((resolve, reject) => {
-    objs.forEach(async (item, index) => {
-      let eight = await GetBoundingBoxPoints(
-        ...item.slice(0, 6),
-        item[9],
-        basic[4],
-        basic[3]
-      );
-    });
-    resolve();
-  });
-}
 let v_objs_canvas = new OffscreenCanvas(960, 480),
-  v_objs_cxt = v_objs_canvas.getContext("2d");
+  v_objs_cxt = v_objs_canvas.getContext("2d"),
+  color,
+  obj_data,
+  text,
+  x,
+  y;
 // 各view渲染障碍物
 function drawVideoObjs(objs, view, key) {
   return new Promise((resolve, reject) => {
+    // console.log(objs, "objs");
     objs.filter((item) => {
-      let color = box_color[`${item[7]}-${item[8]}`];
-      let obj_data = item[item.length - 1][view];
+      color = box_color[`${item[7]}-${item[8]}`];
+      obj_data = item[item.length - 1][view];
       if (obj_data.length <= 0) return;
       v_objs_cxt.beginPath();
+      v_objs_cxt.fillStyle = color;
+      v_objs_cxt.font = "18px serif";
+      text = v_objs_cxt.measureText(item[12]);
+      x =
+        (item[13][`${view}`][7][0] - item[13][`${view}`][6][0]) / 2 +
+        item[13][`${view}`][6][0] -
+        text.width / 2;
+      y = item[13][`${view}`][6][1];
+      v_objs_cxt.fillRect(x - 1, y - 18, text.width + 1, 18);
+      v_objs_cxt.fillStyle = "#fff";
+      v_objs_cxt.fillText(item[12], x, y);
       v_objs_cxt.lineWidth = "1.4"; //线条 宽度
       v_objs_cxt.strokeStyle = color;
       v_objs_cxt.moveTo(obj_data[0][0], obj_data[0][1]); //移动到某个点；
@@ -143,15 +147,43 @@ let view_i = {
     2: "left_front",
   },
   K = {},
-  ext_lidar2cam = {};
+  D = {},
+  ext_lidar2cam = {},
+  crop = {},
+  data = {
+    points_eight: [],
+    foresight: [],
+    rearview: [],
+    right_front: [],
+    right_back: [],
+    left_back: [],
+    left_front: [],
+  },
+  view_sign = {
+    foresight: 0,
+    rearview: 0,
+    right_front: 0,
+    right_back: 0,
+    left_back: 0,
+    left_front: 0,
+  },
+  pt_cam_z_num,
+  transposeMatrix,
+  i,
+  j,
+  e0,
+  e1;
 async function handleObjsPoints(base, objs) {
   return new Promise(async (resolve, reject) => {
-    for (let i = 0; i < 6; i++) {
+    for (i = 0; i < 6; i++) {
       K[view_i[i]] = base[4][i];
-      ext_lidar2cam[view_i[i]] = mat4.invert(mat4.create(), base[3][i]);
+      ext_lidar2cam[view_i[i]] = base[3][i];
+      D[view_i[i]] = base[8][i];
+      crop[view_i[i]] = base[6][i];
     }
-    for (let j = 0; j < objs.length; j++) {
-      let data = {
+    // console.log(objs, "objs");
+    for (j = 0; j < objs.length; j++) {
+      data = {
         points_eight: [],
         foresight: [],
         rearview: [],
@@ -161,9 +193,11 @@ async function handleObjsPoints(base, objs) {
         left_front: [],
       };
 
-      let a = objs[j].slice(0, 6);
-      data.points_eight = await GetBoundingBoxPoints(...a, objs[j][9]);
-      let view_sign = {
+      data.points_eight = await GetBoundingBoxPoints(
+        ...objs[j].slice(0, 6),
+        objs[j][9]
+      );
+      view_sign = {
         foresight: 0,
         rearview: 0,
         right_front: 0,
@@ -172,26 +206,35 @@ async function handleObjsPoints(base, objs) {
         left_front: 0,
       };
       data.points_eight.filter((item) => {
-        let pt_cam_z;
-        for (let e in view_sign) {
-          const transposeMatrix = ext_lidar2cam[e];
-          pt_cam_z =
+        for (e0 in view_sign) {
+          transposeMatrix = ext_lidar2cam[e0];
+          pt_cam_z_num =
             item[0] * transposeMatrix[8] +
             item[1] * transposeMatrix[9] +
             item[2] * transposeMatrix[10] +
             transposeMatrix[11];
-          if (pt_cam_z < 0.2) {
-            view_sign[e]++;
+          if (pt_cam_z_num < 0.2) {
+            view_sign[e0]++;
           }
         }
       });
-      for (let e in view_sign) {
-        if (view_sign[e] === 8) {
-          data[e] = [];
+      for (e1 in view_sign) {
+        if (view_sign[e1] === 8) {
+          data[e1] = [];
         } else {
+          // console.log(base, "base", D[e1], e1)
           data.points_eight.filter((item) => {
-            data[e].push(
-              project_lidar2img(item, ext_lidar2cam[e], K[e], base[5], base[6])
+            // console.log(item, "item");
+            // item[2] += 1.9;
+            data[e1].push(
+              project_lidar2img(
+                item,
+                ext_lidar2cam[e1],
+                K[e1],
+                base[5],
+                crop[e1],
+                D[e1]
+              )
             );
           });
         }
@@ -204,32 +247,73 @@ async function handleObjsPoints(base, objs) {
 }
 // 将3d坐标转换为2D坐标
 // ext转为4*4，k转为3*3
-function project_lidar2img(pts, ext_lidar2cam, K, scale, crop) {
-  const pt_cam_x =
+let pt_cam_x,
+  pt_cam_y,
+  pt_cam_z,
+  x_u,
+  y_u,
+  x_scale,
+  y_scale,
+  x_crop,
+  y_crop,
+  r2,
+  r4,
+  r6,
+  a1,
+  a2,
+  a3,
+  cdist,
+  icdist2,
+  x_d,
+  y_d;
+function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
+  pt_cam_x =
     pts[0] * ext_lidar2cam[0] +
     pts[1] * ext_lidar2cam[1] +
     pts[2] * ext_lidar2cam[2] +
     ext_lidar2cam[3];
-  const pt_cam_y =
+  pt_cam_y =
     pts[0] * ext_lidar2cam[4] +
     pts[1] * ext_lidar2cam[5] +
     pts[2] * ext_lidar2cam[6] +
     ext_lidar2cam[7];
-  const pt_cam_z =
+  pt_cam_z =
     pts[0] * ext_lidar2cam[8] +
     pts[1] * ext_lidar2cam[9] +
     pts[2] * ext_lidar2cam[10] +
     ext_lidar2cam[11];
-  const x_u = pt_cam_x / Math.abs(pt_cam_z);
-  const y_u = pt_cam_y / Math.abs(pt_cam_z);
+  // x_u = pt_cam_x / pt_cam_z;
+  // y_u = pt_cam_y / pt_cam_z;
+  // console.log(pt_cam_x, pt_cam_y, pt_cam_z)
+  x_u = pt_cam_x / Math.abs(pt_cam_z);
+  y_u = pt_cam_y / Math.abs(pt_cam_z);
+  // console.log(x_u, y_u)
+  // console.log(D)
 
-  const x = K[0] * x_u + K[2];
-  const y = K[4] * y_u + K[5];
-  const x_scale = scale[0] * x;
-  const y_scale = scale[1] * y;
+  // r2 = x_u * x_u + y_u * y_u;
+  // r4 = r2 * r2;
+  // r6 = r4 * r2;
+  // a1 = 2 * x_u * y_u;
+  // a2 = r2 + 2 * x_u * x_u;
+  // a3 = r2 + 2 * y_u * y_u;
+  // cdist = 1 + D[0] * r2 + D[1] * r4 + D[4] * r6;
+  // icdist2 = 1 / (1 + D[5] * r2 + D[6] * r4 + D[7] * r6);
 
-  const x_crop = x_scale + crop[0];
-  const y_crop = y_scale + crop[1];
+  // x_d = x_u * cdist * icdist2 + D[2] * a1 + D[3] * a2;
+  // y_d = y_u * cdist * icdist2 + D[2] * a3 + D[3] * a1;
+  // console.log(x_d, y_d)
+
+  x_scale = scale[0] * (K[0] * x_u + K[2]);
+  y_scale = scale[1] * (K[4] * y_u + K[5]);
+  // console.log(K)
+
+  // console.log(crop, "crop");
+  // crop = [0, -80]
+  if (crop[1] == -160) crop[1] = -80;
+  // crop[1] == -160;
+
+  x_crop = x_scale + crop[0];
+  y_crop = y_scale + crop[1];
   return [x_crop, y_crop];
 }
 //    pt0 -- pt1
@@ -240,86 +324,66 @@ function project_lidar2img(pts, ext_lidar2cam, K, scale, crop) {
 //  | /    | /
 // pt6 -- pt7
 // 计算盒子的8个点坐标
-function GetBoundingBoxPoints(x, y, z, w, l, h, r_z, k, ext) {
+let cos_a,
+  sin_a,
+  half_l,
+  half_w,
+  half_h,
+  pt0,
+  pt1,
+  pt2,
+  pt3,
+  pt4,
+  pt5,
+  pt6,
+  pt7;
+function GetBoundingBoxPoints(x, y, z, w, l, h, r_z) {
   return new Promise(async (resolve, reject) => {
-    const cos_a = Math.cos(r_z - Math.PI / 2);
-    const sin_a = Math.sin(r_z - Math.PI / 2);
-    const half_l = l / 2;
-    const half_w = w / 2;
-    const half_h = h / 2;
-    const pt0 = [
+    cos_a = Math.cos(r_z - Math.PI / 2);
+    sin_a = Math.sin(r_z - Math.PI / 2);
+    half_l = l / 2;
+    half_w = w / 2;
+    half_h = h / 2;
+    pt0 = [
       cos_a * -half_w - sin_a * -half_l + x,
       sin_a * -half_w + cos_a * -half_l + y,
       z - half_h,
     ];
-    const pt1 = [
+    pt1 = [
       cos_a * half_w - sin_a * -half_l + x,
       sin_a * half_w + cos_a * -half_l + y,
       z - half_h,
     ];
-    const pt2 = [
+    pt2 = [
       cos_a * -half_w - sin_a * half_l + x,
       sin_a * -half_w + cos_a * half_l + y,
       z - half_h,
     ];
-    const pt3 = [
+    pt3 = [
       cos_a * half_w - sin_a * half_l + x,
       sin_a * half_w + cos_a * half_l + y,
       z - half_h,
     ];
-    const pt4 = [
+    pt4 = [
       cos_a * -half_w - sin_a * -half_l + x,
       sin_a * -half_w + cos_a * -half_l + y,
       z + half_h,
     ];
-    const pt5 = [
+    pt5 = [
       cos_a * half_w - sin_a * -half_l + x,
       sin_a * half_w + cos_a * -half_l + y,
       z + half_h,
     ];
-    const pt6 = [
+    pt6 = [
       cos_a * -half_w - sin_a * half_l + x,
       sin_a * -half_w + cos_a * half_l + y,
       z + half_h,
     ];
-    const pt7 = [
+    pt7 = [
       cos_a * half_w - sin_a * half_l + x,
       sin_a * half_w + cos_a * half_l + y,
       z + half_h,
     ];
     resolve([pt0, pt1, pt2, pt3, pt4, pt5, pt6, pt7]);
-  });
-}
-function construct2DArray(original, m, n) {
-  return original.length === m * n
-    ? Array.from({ length: m }, (_, i) => original.slice(i * n, (i + 1) * n))
-    : [];
-}
-// 计算障碍物信息
-function handleObjs(objs_data) {
-  return new Promise((resolve, reject) => {
-    let obj_index = {
-      "0-0": {
-        name: "car",
-        data: [],
-      },
-      "1-0": { name: "truck", data: [] },
-      "1-1": { name: "construction_vehicle", data: [] },
-      "2-0": { name: "bus", data: [] },
-      "2-1": { name: "trailer", data: [] },
-      "3-0": { name: "barrier", data: [] },
-      "4-0": { name: "motorcycle", data: [] },
-      "4-1": { name: "bicycle", data: [] },
-      "5-0": { name: "pedestrian", data: [] },
-      "5-1": { name: "street_cone", data: [] },
-    };
-    objs_data.filter((item) => {
-      let type = `${item[7]}-${item[8]}`;
-      if (obj_index[type]) {
-        obj_index[type].data.push(item);
-      }
-    });
-    console.log(obj_index, "obj_index");
-    resolve(obj_index);
   });
 }
