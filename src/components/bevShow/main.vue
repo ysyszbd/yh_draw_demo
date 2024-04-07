@@ -112,6 +112,11 @@ let foresight = ref(),
   drawWorker = new Worker(
     new URL("../../controls/draw_worker.js", import.meta.url)
   ),
+  videoWorker = new Worker(
+    new URL("../../controls/video/video_worker.js", import.meta.url), {
+      type: "module"
+    }
+  ),
   time = ref(),
   videos_db = ref(null),
   stop = ref(false),
@@ -130,6 +135,54 @@ let foresight = ref(),
   object = null,
   key = null,
   k = null;
+videoWorker.postMessage({sign: "init"})
+// 视频worker
+videoWorker.onmessage = async (e) => {
+  // console.log(e.data.v_data, "eppppppppppp");
+  if (video_ok_key.value < 0) {
+    Promise.all([
+      await foresight.value.postVideo(
+        e.data.v_data[0],
+        e.data.key,
+        "foresight"
+      ),
+      await right_front.value.postVideo(
+        e.data.v_data[1],
+        e.data.key,
+        "right_front"
+      ),
+      await left_front.value.postVideo(
+        e.data.v_data[4],
+        e.data.key,
+        "left_front"
+      ),
+      await rearview.value.postVideo(e.data.v_data[3], e.data.key, "rearview"),
+      await left_back.value.postVideo(
+        e.data.v_data[2],
+        e.data.key,
+        "left_back"
+      ),
+      await right_back.value.postVideo(
+        e.data.v_data[5],
+        e.data.key,
+        "right_back"
+      ),
+    ]);
+    return;
+  }
+  if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
+    let k = MemoryPool.keys.find((item) => {
+      return item === e.data.key ;
+    });
+    if (!k) MemoryPool.keys.push(e.data.key);
+    MemoryPool.setInitVideo(e.data.key, e.data.v_data[0], "foresight");
+    MemoryPool.setInitVideo(e.data.key, e.data.v_data[3], "rearview");
+    MemoryPool.setInitVideo(e.data.key, e.data.v_data[1], "right_front");
+    MemoryPool.setInitVideo(e.data.key, e.data.v_data[5], "right_back");
+    MemoryPool.setInitVideo(e.data.key, e.data.v_data[2], "left_back");
+    MemoryPool.setInitVideo(e.data.key, e.data.v_data[4], "left_front");
+  }
+}
 drawWorker.onmessage = (e) => {
   if (e.data.sign === "draw_bev&objs") {
     MemoryPool.setOVimg(e.data.key, e.data.v_obj["foresight"], "foresight");
@@ -142,68 +195,70 @@ drawWorker.onmessage = (e) => {
 };
 const props = defineProps(["initStatus"]);
 
-const ws = new Ws("ws://192.168.1.161:1234", true, async (e) => {
+const ws = new Ws("ws://192.168.1.200:1234", true, async (e) => {
   try {
     if (!props.initStatus) return;
     if (e.data instanceof ArrayBuffer) {
       object = decode(e.data);
-      if (video_ok_key.value < 0) {
-        // 唤醒解码器
-        if (object[1].length > 0) {
-          Promise.all([
-            await foresight.value.postVideo(
-              object[1][0],
-              object[0],
-              "foresight"
-            ),
-            await right_front.value.postVideo(
-              object[1][1],
-              object[0],
-              "right_front"
-            ),
-            await left_front.value.postVideo(
-              object[1][2],
-              object[0],
-              "left_front"
-            ),
-            await rearview.value.postVideo(object[1][3], object[0], "rearview"),
-            await left_back.value.postVideo(
-              object[1][4],
-              object[0],
-              "left_back"
-            ),
-            await right_back.value.postVideo(
-              object[1][5],
-              object[0],
-              "right_back"
-            ),
-          ]);
-        }
-      }
+      // console.log(object, "pppp");
+      // if (video_ok_key.value < 0) {
+      //   // 唤醒解码器
+      //   if (object[1].length > 0) {
+      //     Promise.all([
+      //       await foresight.value.postVideo(
+      //         object[1][0],
+      //         object[0],
+      //         "foresight"
+      //       ),
+      //       await right_front.value.postVideo(
+      //         object[1][1],
+      //         object[0],
+      //         "right_front"
+      //       ),
+      //       await left_front.value.postVideo(
+      //         object[1][2],
+      //         object[0],
+      //         "left_front"
+      //       ),
+      //       await rearview.value.postVideo(object[1][3], object[0], "rearview"),
+      //       await left_back.value.postVideo(
+      //         object[1][4],
+      //         object[0],
+      //         "left_back"
+      //       ),
+      //       await right_back.value.postVideo(
+      //         object[1][5],
+      //         object[0],
+      //         "right_back"
+      //       ),
+      //     ]);
+      //   }
+      // }
       // console.log(object, "object");
       if (video_ok_key.value > 0 && object[0] > video_ok_key.value) {
-        key = object[0];
-        k = MemoryPool.keys.find((item) => {
-          return item === key;
-        });
-        if (!k && object[1].length > 0) MemoryPool.keys.push(key);
-        if (object[1].length > 0) {
-          MemoryPool.setInitVideo(key, object[1][0], "foresight");
-          MemoryPool.setInitVideo(key, object[1][3], "rearview");
-          MemoryPool.setInitVideo(key, object[1][1], "right_front");
-          MemoryPool.setInitVideo(key, object[1][5], "right_back");
-          MemoryPool.setInitVideo(key, object[1][4], "left_back");
-          MemoryPool.setInitVideo(key, object[1][2], "left_front");
-        }
+        // key = object[0];
+        // k = MemoryPool.keys.find((item) => {
+        //   return item === key;
+        // });
+        // if (!k && object[1].length > 0) MemoryPool.keys.push(key);
+        // if (object[1].length > 0) {
+        //   MemoryPool.setInitVideo(key, object[1][0], "foresight");
+        //   MemoryPool.setInitVideo(key, object[1][3], "rearview");
+        //   MemoryPool.setInitVideo(key, object[1][1], "right_front");
+        //   MemoryPool.setInitVideo(key, object[1][5], "right_back");
+        //   MemoryPool.setInitVideo(key, object[1][4], "left_back");
+        //   MemoryPool.setInitVideo(key, object[1][2], "left_front");
+        // }
         if (object[2][1] != 0) {
           MemoryPool.bpMap.set(key, object[5]);
           MemoryPool.objsMap.set(key, object[4]);
           MemoryPool.besicMap.set(key, object[2]);
         }
         // if (MemoryPool.objsMap.size > 5) {
-        if (MemoryPool.videosMap["foresight"].size > 2) {
-          await updateVideo();
-        }
+          if (MemoryPool.videosMap["foresight"].size > 1) {
+            await updateVideo();
+          }
+        // }
       }
     }
   } catch (err) {
@@ -259,6 +314,9 @@ async function animate() {
       MemoryPool.besicMap.delete(key);
     }
   }
+  // if (MemoryPool.videosMap["foresight"].size > 2) {
+  //   await updateVideo();
+  // }
   animationFrameId.value = requestAnimationFrame(() => animate());
 }
 
