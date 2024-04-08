@@ -80,7 +80,7 @@ export function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
 
   // console.log(crop, "crop");
   // crop = [0, -80]
-  if (crop[1] == -160) crop[1] = -80;
+  // if (crop[1] == -160) crop[1] = -80;
   // crop[1] == -160;
 
   x_crop = x_scale + crop[0];
@@ -277,18 +277,21 @@ export function handleObjs(objs_data) {
     objs_data.filter((item) => {
       let type = `${item[7]}-${item[8]}`;
       if (obj_index[type]) {
-        if (
-          Math.abs(item[0] * scale) <= 30 &&
-          Math.abs(item[1] * scale) <= 30
-        ) {
+        // if (
+        //   Math.abs(item[0] * scale) <= 30 &&
+        //   Math.abs(item[1] * scale) <= 30
+        // ) {
           //   //   // obj_index[type].data.push(item);
-          item[0] = item[0] * scale;
-          item[1] = item[1] * scale;
+          item[0] = item[0];
+          item[1] = item[1];
+          // item[0] = item[0] * scale;
+          // item[1] = item[1] * scale;
           item[2] = 0;
+          item[9] += 0.5;
           // item[2] += 1.9
           obj_index[type].data.push(item);
         }
-      }
+      // }
     });
     resolve(obj_index);
   });

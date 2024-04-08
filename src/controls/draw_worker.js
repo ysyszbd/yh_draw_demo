@@ -353,7 +353,7 @@ function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
 
   // console.log(crop, "crop");
   // crop = [0, -80]
-  if (crop[1] == -160) crop[1] = -80;
+  // if (crop[1] == -160) crop[1] = -80;
   // crop[1] == -160;
 
   x_crop = x_scale + crop[0];

@@ -14,6 +14,7 @@ let v_buffer = new SharedArrayBuffer(5000000),
   rb_buffer,
   lf_buffer,
   lb_buffer;
+let old_key = 0;
 self.onmessage = async (e) => {
   if (e.data.sign === "init") {
     webSocketInit(reconnect, webSocketInit);
@@ -21,7 +22,7 @@ self.onmessage = async (e) => {
 };
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 const webSocketInit = (reconnect, webSocketInit) => {
-  ws = new WebSocket("ws://192.168.1.161:1234");
+  ws = new WebSocket("ws://192.168.1.66:1234");
   ws.binaryType = "arraybuffer";
   ws.onopen = function () {
     console.log("已连接TCP服务器");
@@ -30,6 +31,15 @@ const webSocketInit = (reconnect, webSocketInit) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
       if (object[1].length > 0) {
+        if (old_key <= 0) {
+          old_key = object[0]
+        }else {
+          if (old_key > object[0]) {
+            console.error("当前时间戳有问题:", old_key, object[0]);
+          }else {
+            old_key = object[0]
+          }
+        }
         // console.log("video");
         f_buffer = v_uni8.slice(0, object[1][0].length);
         f_buffer.set(object[1][0]);
@@ -54,6 +64,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
           sign: "video",
         });
       }
+      // console.log(object, "object");
       if (object[2][1] != 0) {
         // let a = await handleObjsPoints(object[2], object[4]);
         // let b = await handleVO(object[2], object[4], object[0]);
@@ -62,6 +73,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
         postMessage({
           bp: object[5],
           objs: object[4],
+          bev: object[3],
           // v_objs: a,
           besic: object[2],
           key: object[0],

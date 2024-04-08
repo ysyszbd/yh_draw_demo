@@ -80,14 +80,6 @@ import Bev from "@/components/bevShow/bev.vue";
 import echartsYH from "@/components/bevShow/echarts.vue";
 import echartAxis from "@/components/bevShow/echartAxis.vue";
 import {
-  openDB,
-  addData,
-  getDataByKey,
-  deleteDBAll,
-  closeDB,
-  deleteDB,
-} from "@/controls/DB.js";
-import {
   ref,
   inject,
   defineProps,
@@ -130,10 +122,18 @@ let foresight = ref(),
   }),
   v_height = ref(0),
   now_time = ref(formaData(new Date())),
+  monthTime = ref(null),
+  timeChange = ref(null),
   animationFrameId = ref(null),
   object = null,
   key = null,
   k = null;
+onMounted(() => {
+  const timerId = setInterval(() => {
+    now_time.value = formaData(new Date());
+  }, 1000);
+  timeChange.value = timerId;
+})
 videoWorker.postMessage({ sign: "init" });
 // 视频worker
 videoWorker.onmessage = async (e) => {
@@ -170,8 +170,8 @@ videoWorker.onmessage = async (e) => {
       ]);
       return;
     }
-    // if (video_ok_key.value > 0) {
-    if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
+    if (video_ok_key.value > 0) {
+    // if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
       let k = MemoryPool.keys.find((item) => {
         return item === e.data.key;
       });
@@ -194,11 +194,12 @@ videoWorker.onmessage = async (e) => {
   }
   if (e.data.sign === "bev") {
     // console.log("bev111", e.data.v_objs);
-    if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
+    if (video_ok_key.value > 0) {
       let a = await handleObjsPoints(e.data.besic, e.data.objs);
       MemoryPool.bpMap.set(e.data.key, e.data.bp);
       MemoryPool.objsMap.set(e.data.key, e.data.objs);
       MemoryPool.vObjsMap.set(e.data.key, a);
+      MemoryPool.bevMap.set(e.data.key, e.data.bev);
     }
   }
 };
@@ -260,6 +261,7 @@ async function updateVideo() {
         await BEV.value.drawBev({
           objs: objs ? objs : null,
           bevs_point: bevs_point ? bevs_point : null,
+          bev: MemoryPool.bevMap.get(key)
         }),
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
@@ -334,6 +336,9 @@ function getTime() {
 }
 
 onUnmounted(() => {
+  if (timeChange.value) {
+    clearInterval(timeChange.value);
+  }
   MemoryPool.clear();
   videoWorker.terminate();
   ObserverInstance.removeAll();
@@ -354,7 +359,8 @@ onUnmounted(() => {
   background-size: 100% 100%;
   position: relative;
   box-sizing: border-box;
-  padding: 0 35px 35px 35px;
+  padding: 0 10px 10px 10px;
+  // padding: 0 35px 35px 35px;
 }
 .page_title {
   width: 100%;

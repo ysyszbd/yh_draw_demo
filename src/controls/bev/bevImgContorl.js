@@ -159,6 +159,7 @@ export default class bevImgContorl {
       console.log(err, "err---getData");
     }
   }
+  
   // 初始化道路元素
   setMeshRoad(points, directoin) {
     // console.log(points[0], directoin);
@@ -306,7 +307,7 @@ export default class bevImgContorl {
   async handle3D(type, data) {
     try {
       if (!this.objs.start) return;
-      // console.log(data, "data")
+      console.log(data, "data")
       let group = this.objs[`${type}_group`],
         tags = this.objs[`${type}_tags`],
         model = this.objs[type];
@@ -336,7 +337,7 @@ export default class bevImgContorl {
             let c_model = model.scene.clone();
             c_model.matrixAutoUpdate = true;
             c_model.position.set(-point[1], point[0], 0);
-            c_model.rotation.y = -point[9];
+            c_model.rotation.y = point[9];
             group.add(c_model);
             let label3DSprite = this.tag3DSprite(point[12]);
             let pos3 = new THREE.Vector3();
@@ -355,7 +356,7 @@ export default class bevImgContorl {
         if (group.children.length >= data.length) {
           for (let i = 0; i < data.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = -data[i][9];
+            group.children[i].rotation.y = data[i][9];
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
             pos3.z = data[i][5] + 1;
@@ -380,7 +381,7 @@ export default class bevImgContorl {
         } else {
           for (let i = 0; i < group.children.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = -data[i][9];
+            group.children[i].rotation.y = data[i][9];
 
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
@@ -393,7 +394,7 @@ export default class bevImgContorl {
             let l_c_model = model.scene.clone();
             l_c_model.matrixAutoUpdate = true;
             l_c_model.position.set(-data[j][1], data[j][0], 0);
-            l_c_model.rotation.y = -data[j][9];
+            l_c_model.rotation.y = data[j][9];
             group.add(l_c_model);
             let label3DSprite = this.tag3DSprite(data[j][12]);
             let pos3 = new THREE.Vector3();
@@ -580,7 +581,7 @@ export default class bevImgContorl {
           gltf.position.x = -100;
           size = this.ge3Dsize(gltf);
           s = Math.min(1.7 / size.x);
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         } else if (item.id === "truck") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
@@ -595,7 +596,7 @@ export default class bevImgContorl {
           gltf.position.x = -125;
           size = this.ge3Dsize(gltf);
           s = 2.5 / size.x;
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         } else if (item.id === "trailer") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
@@ -603,7 +604,7 @@ export default class bevImgContorl {
           gltf.position.x = -135;
           size = this.ge3Dsize(gltf);
           s = 2.1 / size.x;
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         } else if (item.id === "barrier") {
           gltf.rotation.x = Math.PI / 2;
           gltf.position.x = -145;
@@ -614,7 +615,7 @@ export default class bevImgContorl {
           gltf.position.y = -124;
           size = this.ge3Dsize(gltf);
           s = 0.98 / size.x;
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         } else if (item.id === "bicycle") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI / 2;
@@ -630,7 +631,8 @@ export default class bevImgContorl {
           gltf.position.x = 120;
           gltf.position.y = -114;
           size = this.ge3Dsize(gltf);
-          s = 1.65 / size.z;
+          s = 3.5 / size.z;
+          // gltf.scale.set(0.5, 0.5, 0.5);
           gltf.scale.set(s, s, s);
         } else if (item.id === "street_cone") {
           gltf.rotation.x = Math.PI / 2;
@@ -639,7 +641,8 @@ export default class bevImgContorl {
           gltf.position.y = -144;
           size = this.ge3Dsize(gltf);
           s = 0.8 / size.z;
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         } else if (item.id === "construction_vehicle") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI / 3 * 2;
@@ -647,7 +650,7 @@ export default class bevImgContorl {
           gltf.position.y = -100;
           size = this.ge3Dsize(gltf);
           s = 6 / size.x;
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         }
         if (item.id !== "main_car") {
           this.objs[`${item.id}_whl`] = this.ge3Dsize(gltf);
