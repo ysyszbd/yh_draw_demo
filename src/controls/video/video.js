@@ -72,7 +72,7 @@ export default class Video {
     // 使用canvas外部的元素来控制canvas的大小
     let w = 940;
     let h = 480;
-    // console.log(data, "data");
+    console.log(data.objs, "data");
     if (this.helper_dom.width != w || this.helper_dom.height != h) {
       this.helper_dom.width = w;
       this.helper_dom.height = h;

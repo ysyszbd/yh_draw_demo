@@ -354,6 +354,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: #0a439a;
+  color: rgba(80, 82, 79);
   background-image: url("@/assets/images/bg.png");
   background-repeat: no-repeat;
   background-size: 100% 100%;

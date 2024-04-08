@@ -277,21 +277,21 @@ export function handleObjs(objs_data) {
     objs_data.filter((item) => {
       let type = `${item[7]}-${item[8]}`;
       if (obj_index[type]) {
-        // if (
-        //   Math.abs(item[0] * scale) <= 30 &&
-        //   Math.abs(item[1] * scale) <= 30
-        // ) {
+        if (
+          Math.abs(item[0] * scale) <= 51.2 &&
+          Math.abs(item[1] * scale) <= 51.2
+        ) {
           //   //   // obj_index[type].data.push(item);
-          item[0] = item[0];
-          item[1] = item[1];
-          // item[0] = item[0] * scale;
-          // item[1] = item[1] * scale;
+          // item[0] = item[0];
+          // item[1] = item[1];
+          item[0] = item[0] * scale;
+          item[1] = item[1] * scale;
           item[2] = 0;
-          item[9] += 0.5;
+          // item[9] += 0.5;
           // item[2] += 1.9
           obj_index[type].data.push(item);
         }
-      // }
+      }
     });
     resolve(obj_index);
   });
