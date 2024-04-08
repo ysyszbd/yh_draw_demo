@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-03 18:18:52
+ * @LastEditTime: 2024-04-08 11:59:49
  * @Description:
  */
 // import { K, D, ext_lidar2cam } from "../assets/demo_data/data";
@@ -18,36 +18,73 @@ export function construct2DArray(original, m, n) {
 }
 // 将3d坐标转换为2D坐标
 // ext转为4*4，k转为3*3
-export function project_lidar2img(pts, ext_lidar2cam, K, scale, crop) {
-  // 逆转矩阵
-  // const transposeMatrix = math.inv(ext_lidar2cam);
-  ext_lidar2cam = transposeMatrix;
+let pt_cam_x,
+  pt_cam_y,
+  pt_cam_z,
+  x_u,
+  y_u,
+  x_scale,
+  y_scale,
+  x_crop,
+  y_crop,
+  r2,
+  r4,
+  r6,
+  a1,
+  a2,
+  a3,
+  cdist,
+  icdist2,
+  x_d,
+  y_d;
+export function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
+  pt_cam_x =
+    pts[0] * ext_lidar2cam[0] +
+    pts[1] * ext_lidar2cam[1] +
+    pts[2] * ext_lidar2cam[2] +
+    ext_lidar2cam[3];
+  pt_cam_y =
+    pts[0] * ext_lidar2cam[4] +
+    pts[1] * ext_lidar2cam[5] +
+    pts[2] * ext_lidar2cam[6] +
+    ext_lidar2cam[7];
+  pt_cam_z =
+    pts[0] * ext_lidar2cam[8] +
+    pts[1] * ext_lidar2cam[9] +
+    pts[2] * ext_lidar2cam[10] +
+    ext_lidar2cam[11];
+  // x_u = pt_cam_x / pt_cam_z;
+  // y_u = pt_cam_y / pt_cam_z;
+  // console.log(pt_cam_x, pt_cam_y, pt_cam_z)
+  x_u = pt_cam_x / Math.abs(pt_cam_z);
+  y_u = pt_cam_y / Math.abs(pt_cam_z);
+  // console.log(x_u, y_u)
+  // console.log(D)
 
-  const pt_cam_x =
-    pts[0] * ext_lidar2cam[0][0] +
-    pts[1] * ext_lidar2cam[0][1] +
-    pts[2] * ext_lidar2cam[0][2] +
-    ext_lidar2cam[0][3];
-  const pt_cam_y =
-    pts[0] * ext_lidar2cam[1][0] +
-    pts[1] * ext_lidar2cam[1][1] +
-    pts[2] * ext_lidar2cam[1][2] +
-    ext_lidar2cam[1][3];
-  const pt_cam_z =
-    pts[0] * ext_lidar2cam[2][0] +
-    pts[1] * ext_lidar2cam[2][1] +
-    pts[2] * ext_lidar2cam[2][2] +
-    ext_lidar2cam[2][3];
-  const x_u = pt_cam_x / Math.abs(pt_cam_z);
-  const y_u = pt_cam_y / Math.abs(pt_cam_z);
+  // r2 = x_u * x_u + y_u * y_u;
+  // r4 = r2 * r2;
+  // r6 = r4 * r2;
+  // a1 = 2 * x_u * y_u;
+  // a2 = r2 + 2 * x_u * x_u;
+  // a3 = r2 + 2 * y_u * y_u;
+  // cdist = 1 + D[0] * r2 + D[1] * r4 + D[4] * r6;
+  // icdist2 = 1 / (1 + D[5] * r2 + D[6] * r4 + D[7] * r6);
 
-  const x = K[0][0] * x_u + K[0][2];
-  const y = K[1][1] * y_u + K[1][2];
-  const x_scale = scale[0] * x;
-  const y_scale = scale[1] * y;
+  // x_d = x_u * cdist * icdist2 + D[2] * a1 + D[3] * a2;
+  // y_d = y_u * cdist * icdist2 + D[2] * a3 + D[3] * a1;
+  // console.log(x_d, y_d)
 
-  const x_crop = x_scale + crop[0];
-  const y_crop = y_scale + crop[1];
+  x_scale = scale[0] * (K[0] * x_u + K[2]);
+  y_scale = scale[1] * (K[4] * y_u + K[5]);
+  // console.log(K)
+
+  // console.log(crop, "crop");
+  // crop = [0, -80]
+  if (crop[1] == -160) crop[1] = -80;
+  // crop[1] == -160;
+
+  x_crop = x_scale + crop[0];
+  y_crop = y_scale + crop[1];
   return [x_crop, y_crop];
 }
 //    pt0 -- pt1
@@ -121,14 +158,45 @@ let view_i = {
     2: "left_front",
   },
   K = {},
-  ext_lidar2cam = {};
+  D = {},
+  ext_lidar2cam = {},
+  crop = {},
+  data = {
+    points_eight: [],
+    foresight: [],
+    rearview: [],
+    right_front: [],
+    right_back: [],
+    left_back: [],
+    left_front: [],
+  },
+  view_sign = {
+    foresight: 0,
+    rearview: 0,
+    right_front: 0,
+    right_back: 0,
+    left_back: 0,
+    left_front: 0,
+  },
+  pt_cam_z_num,
+  transposeMatrix,
+  i,
+  j,
+  e0,
+  e1,
+  arr,
+  points_eight,
+  empty_arr;
 export async function handleObjsPoints(base, objs) {
   return new Promise(async (resolve, reject) => {
-    for (let i = 0; i < 6; i++) {
-      K[view_i[i]] = construct2DArray(base[4][i], 3, 3);
-      ext_lidar2cam[view_i[i]] = construct2DArray(base[3][i], 4, 4);
+    for (i = 0; i < 6; i++) {
+      K[view_i[i]] = base[4][i];
+      ext_lidar2cam[view_i[i]] = base[3][i];
+      D[view_i[i]] = base[8][i];
+      crop[view_i[i]] = base[6][i];
     }
-    for (let j = 0; j < objs.length; j++) {
+    // console.log(objs, "objs");
+    for (j = 0; j < objs.length; j++) {
       let data = {
         points_eight: [],
         foresight: [],
@@ -139,8 +207,10 @@ export async function handleObjsPoints(base, objs) {
         left_front: [],
       };
 
-      let a = objs[j].slice(0, 6);
-      data.points_eight = await GetBoundingBoxPoints(...a, objs[j][9]);
+      data.points_eight = await GetBoundingBoxPoints(
+        ...objs[j].slice(0, 6),
+        objs[j][9]
+      );
       let view_sign = {
         foresight: 0,
         rearview: 0,
@@ -150,31 +220,36 @@ export async function handleObjsPoints(base, objs) {
         left_front: 0,
       };
       data.points_eight.filter((item) => {
-        let pt_cam_z;
-        for (let e in view_sign) {
-          // const transposeMatrix = math.inv(ext_lidar2cam[e]);
-          pt_cam_z =
-            item[0] * transposeMatrix[2][0] +
-            item[1] * transposeMatrix[2][1] +
-            item[2] * transposeMatrix[2][2] +
-            transposeMatrix[2][3];
-          if (pt_cam_z < 0.2) {
-            view_sign[e]++;
+        for (e0 in view_sign) {
+          let transposeMatrix = ext_lidar2cam[e0];
+          let pt_cam_z_num =
+            item[0] * transposeMatrix[8] +
+            item[1] * transposeMatrix[9] +
+            item[2] * transposeMatrix[10] +
+            transposeMatrix[11];
+          if (pt_cam_z_num < 0.2) {
+            view_sign[e0]++;
           }
         }
       });
-
-      data.points_eight.filter((item) => {
-        for (let e in view_sign) {
-          if (view_sign[e] === 8) {
-            data[e].push([-1, -1]);
-          } else {
-            data[e].push(
-              project_lidar2img(item, ext_lidar2cam[e], K[e], base[5], base[6])
+      for (e1 in view_sign) {
+        if (view_sign[e1] === 8) {
+          data[e1] = [];
+        } else {
+          data.points_eight.filter((item) => {
+            data[e1].push(
+              project_lidar2img(
+                item,
+                ext_lidar2cam[e1],
+                K[e1],
+                base[5],
+                crop[e1],
+                D[e1]
+              )
             );
-          }
+          });
         }
-      });
+      }
       objs[j].push(data);
     }
     resolve(objs);
@@ -219,14 +294,16 @@ export function handleObjs(objs_data) {
   });
 }
 export function formaData(timer) {
-  const year = timer.getFullYear()
-  const month = timer.getMonth() + 1 // 由于月份从0开始，因此需加1
-  const day = timer.getDate()
-  const hour = timer.getHours()
-  const minute = timer.getMinutes()
-  const second = timer.getSeconds()
-  return `${pad(year, 4)}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)}:${pad(second)}`
+  const year = timer.getFullYear();
+  const month = timer.getMonth() + 1; // 由于月份从0开始，因此需加1
+  const day = timer.getDate();
+  const hour = timer.getHours();
+  const minute = timer.getMinutes();
+  const second = timer.getSeconds();
+  return `${pad(year, 4)}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(
+    minute
+  )}:${pad(second)}`;
 }
-export function pad(timeEl, total = 2, str = '0') {
-  return timeEl.toString().padStart(total, str)
+export function pad(timeEl, total = 2, str = "0") {
+  return timeEl.toString().padStart(total, str);
 }

@@ -1,5 +1,5 @@
 <!--
- * @LastEditTime: 2024-04-01 21:00:20
+ * @LastEditTime: 2024-04-07 15:16:30
  * @Description: 
 -->
 <template>
@@ -35,6 +35,7 @@ let video_work = new Worker(
 const initAll = inject("initAll");
 onMounted(() => {
   yh_video.value = new VIDEO(props.video_id);
+  
   initVideoWork();
 });
 function drawVideo(data) {
@@ -115,13 +116,16 @@ onUnmounted(() => {
   height: 100%;
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   .handle_box_canvas {
-    width: 100%;
+    // width: 100%;
     height: 100%;
     color: rgb(255, 255, 0);
     position: absolute;
     top: 0;
-    left: 0;
+    // left: 0;
     transform-origin: 0 0;
     z-index: 1;
     border-radius: 5px;

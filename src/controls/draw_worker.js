@@ -1,9 +1,3 @@
-// importScripts("./gl-matrix-min.js");
-// const mat4 = glMatrix.mat4;
-
-// import { Console } from "console";
-
-// const mat3 = glMatrix.mat3;
 let v_objs,
   f_imageBitmap,
   r_imageBitmap,
@@ -12,8 +6,12 @@ let v_objs,
   lb_imageBitmap,
   lf_imageBitmap;
 onmessage = async (e) => {
+  // if (e.data.sign === "bev_init") {
+  //   webSocketInit(reconnect, webSocketInit);
+  // }
   if (e.data.sign === "draw_bev&objs") {
     v_objs = await handleObjsPoints(e.data.basic_data, e.data.objs);
+    // console.log(v_objs, "v_objs");
     f_imageBitmap = await drawVideoObjs(v_objs, "foresight", e.data.key);
     r_imageBitmap = await drawVideoObjs(v_objs, "rearview", e.data.key);
     rf_imageBitmap = await drawVideoObjs(v_objs, "right_front", e.data.key);
@@ -24,14 +22,13 @@ onmessage = async (e) => {
       {
         sign: e.data.sign,
         key: e.data.key,
-        v_obj: {
-          foresight: f_imageBitmap,
-          rearview: r_imageBitmap,
-          right_front: rf_imageBitmap,
-          right_back: rb_imageBitmap,
-          left_back: lb_imageBitmap,
-          left_front: lf_imageBitmap,
-        },
+        v_o: v_objs,
+        f_imageBitmap,
+        r_imageBitmap,
+        rf_imageBitmap,
+        rb_imageBitmap,
+        lb_imageBitmap,
+        lf_imageBitmap,
       },
       [
         f_imageBitmap,
@@ -49,6 +46,47 @@ onmessage = async (e) => {
     rb_imageBitmap = null;
     lb_imageBitmap = null;
     lf_imageBitmap = null;
+  }
+};
+let ws,
+  limitConnect = 10,
+  timeConnect = 0;
+const webSocketInit = (reconnect, webSocketInit) => {
+  ws = new WebSocket("ws://192.168.1.161:1234");
+  ws.binaryType = "arraybuffer";
+  ws.onopen = function () {
+    console.log("已连接TCP服务器");
+  };
+  ws.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) {
+      let object = decode(e.data);
+      if (object[1].length > 0) {
+        postMessage(
+          {
+            key: object[0],
+            v_data: object[1],
+          },
+          [object[1][0].buffer]
+        );
+      }
+    }
+  };
+  ws.onclose = () => {
+    console.log("服务器已经断开");
+    reconnect(reconnect, webSocketInit);
+  };
+};
+const reconnect = (reconnect, webSocketInit) => {
+  if (this.limitConnect > 0) {
+    limitConnect--;
+    timeConnect++;
+    console.log("第" + this.timeConnect + "次重连");
+
+    setTimeout(function () {
+      webSocketInit(reconnect, webSocketInit);
+    }, 2000);
+  } else {
+    console.log("TCP连接已超时");
   }
 };
 let map = new Map();
@@ -91,9 +129,10 @@ let v_objs_canvas = new OffscreenCanvas(960, 480),
 // 各view渲染障碍物
 function drawVideoObjs(objs, view, key) {
   return new Promise((resolve, reject) => {
-    // console.log(objs, "objs");
+    
     objs.filter((item) => {
-      color = box_color[`${item[7]}-${item[8]}`];
+      color = "rgba(255, 255, 255, 0.3)";
+      // color = box_color[`${item[7]}-${item[8]}`];
       obj_data = item[item.length - 1][view];
       if (obj_data.length <= 0) return;
       v_objs_cxt.beginPath();
@@ -105,7 +144,7 @@ function drawVideoObjs(objs, view, key) {
         item[13][`${view}`][6][0] -
         text.width / 2;
       y = item[13][`${view}`][6][1];
-      v_objs_cxt.fillRect(x - 1, y - 18, text.width + 1, 18);
+      v_objs_cxt.fillRect(x - 4, y - 18, text.width + 1, 18);
       v_objs_cxt.fillStyle = "#fff";
       v_objs_cxt.fillText(item[12], x, y);
       v_objs_cxt.lineWidth = "1.4"; //线条 宽度
@@ -129,11 +168,11 @@ function drawVideoObjs(objs, view, key) {
       v_objs_cxt.lineTo(obj_data[7][0], obj_data[7][1]);
       v_objs_cxt.stroke(); //描边
     });
-    // v_objs_cxt.fillStyle = "white";
-    // v_objs_cxt.fillRect(10, 20, 180, 30);
-    // v_objs_cxt.font = "20px serif";
-    // v_objs_cxt.fillStyle = "green";
-    // v_objs_cxt.fillText(key, 10, 40);
+    v_objs_cxt.fillStyle = "white";
+    v_objs_cxt.fillRect(10, 60, 180, 30);
+    v_objs_cxt.font = "20px serif";
+    v_objs_cxt.fillStyle = "green";
+    v_objs_cxt.fillText(key, 10, 80);
     resolve(v_objs_canvas.transferToImageBitmap());
   });
 }
@@ -145,6 +184,14 @@ let view_i = {
     5: "right_back",
     4: "left_back",
     2: "left_front",
+  },
+  view_ship = {
+    foresight: 0,
+    rearview: 3,
+    right_front: 1,
+    right_back: 5,
+    left_back: 4,
+    left_front: 2,
   },
   K = {},
   D = {},
@@ -167,6 +214,7 @@ let view_i = {
     left_back: 0,
     left_front: 0,
   },
+  obj_buffer,
   pt_cam_z_num,
   transposeMatrix,
   i,
@@ -222,10 +270,7 @@ async function handleObjsPoints(base, objs) {
         if (view_sign[e1] === 8) {
           data[e1] = [];
         } else {
-          // console.log(base, "base", D[e1], e1)
           data.points_eight.filter((item) => {
-            // console.log(item, "item");
-            // item[2] += 1.9;
             data[e1].push(
               project_lidar2img(
                 item,
@@ -241,7 +286,6 @@ async function handleObjsPoints(base, objs) {
       }
       objs[j].push(data);
     }
-    // console.log(objs, "objs");
     resolve(objs);
   });
 }

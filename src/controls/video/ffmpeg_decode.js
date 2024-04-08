@@ -20,6 +20,7 @@ async function decodeArray(u8Array, key, view) {
     Module._free(ptr);
     ptr = null;
     if (outputPtr === 0) return;
+    
     var rgbData = new Uint8ClampedArray(
       Module.HEAPU8.subarray(
         outputPtr,
@@ -79,11 +80,11 @@ function drawVideoBg(info, key) {
       imgData.data[i + 2] = data0;
     }
     v_context.putImageData(imgData, 0, 0);
-    // v_context.fillStyle = "white";
-    // v_context.fillRect(10, 0, 180, 30);
-    // v_context.font = "24px serif";
-    // v_context.fillStyle = "red";
-    // v_context.fillText(key, 10, 20);
+    v_context.fillStyle = "white";
+    v_context.fillRect(10, 0, 180, 30);
+    v_context.font = "24px serif";
+    v_context.fillStyle = "red";
+    v_context.fillText(key, 10, 20);
     resolve(v_canvas.transferToImageBitmap());
   });
 }

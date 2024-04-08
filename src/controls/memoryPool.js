@@ -24,6 +24,8 @@ export default class MemoryPool {
       left_front: new Map(),
     };
     this.objsMap = new Map(); // 原始obj数据
+    this.vObjsMap = new Map(); // 视频的障碍物数据
+    this.v_o = new Map();
     this.bpMap = new Map();
     this.besicMap = new Map();
   }
@@ -39,10 +41,10 @@ export default class MemoryPool {
   // 存放原始video数据
   setInitVideo(key, block, view) {
     try {
-      let buffer = this.v_uni8.slice(0, block.length);
-      buffer.set(block);
-      this.videosMap[view].set(key, buffer);
-      buffer = null;
+      // let buffer = this.v_uni8.slice(0, block.length);
+      // buffer.set(block);
+      this.videosMap[view].set(key, block);
+      // buffer = null;
     } catch (err) {
       console.log(err, "err----setInitVideo");
     }

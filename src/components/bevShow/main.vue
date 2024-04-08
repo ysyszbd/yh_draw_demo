@@ -10,9 +10,9 @@
         <img src="@/assets/images/logo.png" alt="" class="logo" />
       </div>
     </div>
-    <div class="bottom_box">
+    <div class="bottom_box" id="bottom_box">
       <div class="left">
-        <div class="v_title">前</div>
+        <div class="v_title" id="v_title">前</div>
         <videoYH
           ref="foresight"
           id="foresight"
@@ -98,7 +98,7 @@ import {
 import { ObserverInstance } from "@/controls/event/observer";
 import Ws from "@/controls/ws.js";
 import { decode } from "@msgpack/msgpack";
-import { formaData } from "@/controls/box2img.js";
+import { formaData, handleObjsPoints } from "@/controls/box2img.js";
 import memoryPool from "@/controls/memoryPool.js";
 
 let foresight = ref(),
@@ -109,12 +109,10 @@ let foresight = ref(),
   left_front = ref(),
   BEV = ref(),
   MemoryPool = new memoryPool(),
-  drawWorker = new Worker(
-    new URL("../../controls/draw_worker.js", import.meta.url)
-  ),
   videoWorker = new Worker(
-    new URL("../../controls/video/video_worker.js", import.meta.url), {
-      type: "module"
+    new URL("../../controls/video/video_worker.js", import.meta.url),
+    {
+      type: "module",
     }
   ),
   time = ref(),
@@ -130,144 +128,86 @@ let foresight = ref(),
     left_back: false,
     left_front: false,
   }),
+  v_height = ref(0),
   now_time = ref(formaData(new Date())),
   animationFrameId = ref(null),
   object = null,
   key = null,
   k = null;
-videoWorker.postMessage({sign: "init"})
+videoWorker.postMessage({ sign: "init" });
 // 视频worker
 videoWorker.onmessage = async (e) => {
-  // console.log(e.data.v_data, "eppppppppppp");
-  if (video_ok_key.value < 0) {
-    Promise.all([
-      await foresight.value.postVideo(
-        e.data.v_data[0],
-        e.data.key,
-        "foresight"
-      ),
-      await right_front.value.postVideo(
-        e.data.v_data[1],
-        e.data.key,
-        "right_front"
-      ),
-      await left_front.value.postVideo(
-        e.data.v_data[4],
-        e.data.key,
-        "left_front"
-      ),
-      await rearview.value.postVideo(e.data.v_data[3], e.data.key, "rearview"),
-      await left_back.value.postVideo(
-        e.data.v_data[2],
-        e.data.key,
-        "left_back"
-      ),
-      await right_back.value.postVideo(
-        e.data.v_data[5],
-        e.data.key,
-        "right_back"
-      ),
-    ]);
-    return;
+  if (e.data.sign === "video") {
+    // console.log("video111", e.data.key, video_ok_key.value);
+    if (video_ok_key.value < 0) {
+      Promise.all([
+        await foresight.value.postVideo(
+          e.data.f_buffer,
+          e.data.key,
+          "foresight"
+        ),
+        await right_front.value.postVideo(
+          e.data.rf_buffer,
+          e.data.key,
+          "right_front"
+        ),
+        await left_front.value.postVideo(
+          e.data.lf_buffer,
+          e.data.key,
+          "left_front"
+        ),
+        await rearview.value.postVideo(e.data.r_buffer, e.data.key, "rearview"),
+        await left_back.value.postVideo(
+          e.data.lb_buffer,
+          e.data.key,
+          "left_back"
+        ),
+        await right_back.value.postVideo(
+          e.data.rb_buffer,
+          e.data.key,
+          "right_back"
+        ),
+      ]);
+      return;
+    }
+    // if (video_ok_key.value > 0) {
+    if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
+      let k = MemoryPool.keys.find((item) => {
+        return item === e.data.key;
+      });
+      // console.log(e.data.key, "e.data.key", k);
+      if (!k) {
+        MemoryPool.keys.push(e.data.key);
+        MemoryPool.setInitVideo(e.data.key, e.data.f_buffer, "foresight");
+        MemoryPool.setInitVideo(e.data.key, e.data.r_buffer, "rearview");
+        MemoryPool.setInitVideo(e.data.key, e.data.rf_buffer, "right_front");
+        MemoryPool.setInitVideo(e.data.key, e.data.rb_buffer, "right_back");
+        MemoryPool.setInitVideo(e.data.key, e.data.lb_buffer, "left_back");
+        MemoryPool.setInitVideo(e.data.key, e.data.lf_buffer, "left_front");
+      }
+      if (MemoryPool.videosMap["foresight"].size > 4) {
+        await updateVideo();
+      }
+    } else {
+      console.error("时间戳", e.data.key, video_ok_key.value);
+    }
   }
-  if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
-    let k = MemoryPool.keys.find((item) => {
-      return item === e.data.key ;
-    });
-    if (!k) MemoryPool.keys.push(e.data.key);
-    MemoryPool.setInitVideo(e.data.key, e.data.v_data[0], "foresight");
-    MemoryPool.setInitVideo(e.data.key, e.data.v_data[3], "rearview");
-    MemoryPool.setInitVideo(e.data.key, e.data.v_data[1], "right_front");
-    MemoryPool.setInitVideo(e.data.key, e.data.v_data[5], "right_back");
-    MemoryPool.setInitVideo(e.data.key, e.data.v_data[2], "left_back");
-    MemoryPool.setInitVideo(e.data.key, e.data.v_data[4], "left_front");
-  }
-}
-drawWorker.onmessage = (e) => {
-  if (e.data.sign === "draw_bev&objs") {
-    MemoryPool.setOVimg(e.data.key, e.data.v_obj["foresight"], "foresight");
-    MemoryPool.setOVimg(e.data.key, e.data.v_obj["rearview"], "rearview");
-    MemoryPool.setOVimg(e.data.key, e.data.v_obj["right_front"], "right_front");
-    MemoryPool.setOVimg(e.data.key, e.data.v_obj["right_back"], "right_back");
-    MemoryPool.setOVimg(e.data.key, e.data.v_obj["left_back"], "left_back");
-    MemoryPool.setOVimg(e.data.key, e.data.v_obj["left_front"], "left_front");
+  if (e.data.sign === "bev") {
+    // console.log("bev111", e.data.v_objs);
+    if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
+      let a = await handleObjsPoints(e.data.besic, e.data.objs);
+      MemoryPool.bpMap.set(e.data.key, e.data.bp);
+      MemoryPool.objsMap.set(e.data.key, e.data.objs);
+      MemoryPool.vObjsMap.set(e.data.key, a);
+    }
   }
 };
 const props = defineProps(["initStatus"]);
 
-const ws = new Ws("ws://192.168.1.200:1234", true, async (e) => {
-  try {
-    if (!props.initStatus) return;
-    if (e.data instanceof ArrayBuffer) {
-      object = decode(e.data);
-      // console.log(object, "pppp");
-      // if (video_ok_key.value < 0) {
-      //   // 唤醒解码器
-      //   if (object[1].length > 0) {
-      //     Promise.all([
-      //       await foresight.value.postVideo(
-      //         object[1][0],
-      //         object[0],
-      //         "foresight"
-      //       ),
-      //       await right_front.value.postVideo(
-      //         object[1][1],
-      //         object[0],
-      //         "right_front"
-      //       ),
-      //       await left_front.value.postVideo(
-      //         object[1][2],
-      //         object[0],
-      //         "left_front"
-      //       ),
-      //       await rearview.value.postVideo(object[1][3], object[0], "rearview"),
-      //       await left_back.value.postVideo(
-      //         object[1][4],
-      //         object[0],
-      //         "left_back"
-      //       ),
-      //       await right_back.value.postVideo(
-      //         object[1][5],
-      //         object[0],
-      //         "right_back"
-      //       ),
-      //     ]);
-      //   }
-      // }
-      // console.log(object, "object");
-      if (video_ok_key.value > 0 && object[0] > video_ok_key.value) {
-        // key = object[0];
-        // k = MemoryPool.keys.find((item) => {
-        //   return item === key;
-        // });
-        // if (!k && object[1].length > 0) MemoryPool.keys.push(key);
-        // if (object[1].length > 0) {
-        //   MemoryPool.setInitVideo(key, object[1][0], "foresight");
-        //   MemoryPool.setInitVideo(key, object[1][3], "rearview");
-        //   MemoryPool.setInitVideo(key, object[1][1], "right_front");
-        //   MemoryPool.setInitVideo(key, object[1][5], "right_back");
-        //   MemoryPool.setInitVideo(key, object[1][4], "left_back");
-        //   MemoryPool.setInitVideo(key, object[1][2], "left_front");
-        // }
-        if (object[2][1] != 0) {
-          MemoryPool.bpMap.set(key, object[5]);
-          MemoryPool.objsMap.set(key, object[4]);
-          MemoryPool.besicMap.set(key, object[2]);
-        }
-        // if (MemoryPool.objsMap.size > 5) {
-          if (MemoryPool.videosMap["foresight"].size > 1) {
-            await updateVideo();
-          }
-        // }
-      }
-    }
-  } catch (err) {
-    console.log(err, "err----WS");
-  }
-});
 animate();
 async function animate() {
-  if (MemoryPool.keys.length > 1) {
+  // console.log("animate", video_ok_key.value);
+  if (MemoryPool.keys.length > 0) {
     let key = MemoryPool.keys.shift();
     MemoryPool.startK.push(key);
     if (MemoryPool.videosMap["foresight"].has(key)) {
@@ -304,19 +244,7 @@ async function animate() {
         ),
       ]);
     }
-    if (MemoryPool.objsMap.has(key)) {
-      drawWorker.postMessage({
-        sign: "draw_bev&objs",
-        key: key,
-        objs: MemoryPool.objsMap.get(key),
-        basic_data: MemoryPool.besicMap.get(key),
-      });
-      MemoryPool.besicMap.delete(key);
-    }
   }
-  // if (MemoryPool.videosMap["foresight"].size > 2) {
-  //   await updateVideo();
-  // }
   animationFrameId.value = requestAnimationFrame(() => animate());
 }
 
@@ -326,7 +254,7 @@ async function updateVideo() {
     let key = MemoryPool.startK[0];
     let objs = MemoryPool.objsMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
-
+    let v_objs = MemoryPool.vObjsMap.get(key);
     if (MemoryPool.hasVideo(key)) {
       Promise.all([
         await BEV.value.drawBev({
@@ -335,54 +263,42 @@ async function updateVideo() {
         }),
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
-          obj: MemoryPool.getOVimg(key, "foresight"),
           key: key,
+          objs: v_objs,
         }),
         await right_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_front"),
-          obj: MemoryPool.getOVimg(key, "right_front"),
           key: key,
+          objs: v_objs,
         }),
         await left_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_front"),
-          obj: MemoryPool.getOVimg(key, "left_front"),
           key: key,
+          objs: v_objs,
         }),
         await rearview.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "rearview"),
-          obj: MemoryPool.getOVimg(key, "rearview"),
           key: key,
+          objs: v_objs,
         }),
         await left_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_back"),
-          obj: MemoryPool.getOVimg(key, "left_back"),
           key: key,
+          objs: v_objs,
         }),
         await right_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_back"),
-          obj: MemoryPool.getOVimg(key, "right_back"),
           key: key,
+          objs: v_objs,
         }),
       ]);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
       MemoryPool.bpMap.delete(key);
-      MemoryPool.delOVimg(key);
+      MemoryPool.vObjsMap.delete(key);
       MemoryPool.objsMap.delete(key);
       key = null;
     }
-    // else {
-    //   await BEV.value.drawBev({
-    //     objs: objs ? objs : null,
-    //     bevs_point: bevs_point ? bevs_point : null,
-    //   });
-    //   MemoryPool.objsMap.delete(key);
-    //   MemoryPool.startK.shift();
-    //   MemoryPool.bpMap.delete(key);
-    //   MemoryPool.delOVimg(key);
-    //   MemoryPool.objsMap.delete(key);
-    //   key = null;
-    // }
     resolve("");
   });
 }
@@ -414,15 +330,15 @@ async function updataVideoStatus(message) {
 }
 getTime();
 function getTime() {
-  // let t = new Date();
   return formaData(new Date());
 }
 
 onUnmounted(() => {
   MemoryPool.clear();
-  drawWorker.terminate();
+  videoWorker.terminate();
   ObserverInstance.removeAll();
-  cancelAnimationFrame(animationFrameId.value);
+  console.error("00000000000--onUnmounted");
+  // cancelAnimationFrame(animationFrameId.value);
 });
 </script>
 
@@ -511,7 +427,16 @@ onUnmounted(() => {
 .left {
   width: 280px;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
+.right {
+  width: 280px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .v_title {
   width: 280px;
   height: 22px;
@@ -527,13 +452,15 @@ onUnmounted(() => {
     rgba(1, 180, 255, 0.04)
   );
   color: #fff;
+  flex-shrink: 0;
 }
 .v_box {
   width: 100%;
-  height: 140px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 5px 0;
 }
 .b_center_box {
   width: 352px;

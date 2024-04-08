@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-03 17:06:53
+ * @LastEditTime: 2024-04-07 16:05:43
  * @Description:
  */
 /*
@@ -144,18 +144,10 @@ export default class bevImgContorl {
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
         if (data.bevs_point) {
-          // let arr3 = data.bevs_point.filter((item) => {
-          //   return item[0] === 3;
-          // });
-          // if (arr3.length > 1) {
-          //   this.road = new THREE.Object3D();
-          //   const l_mesh = this.setMeshRoad(arr3[0][1], "left");
-          //   this.road.add(l_mesh);
-          //   const r_mesh = this.setMeshRoad(arr3[arr3.length - 1][1], "right");
-          //   this.road.add(r_mesh);
-          //   this.scene.add(this.road);
-          // }
-          // console.log(arr3, "arr3");
+          let arr3 = data.bevs_point.filter(item => {
+            return item[0] === 3
+          })
+          // console.log(arr3, "data.bevs_point");
           this.handleLine(data.bevs_point);
         }
         if (data.objs) {
@@ -471,19 +463,10 @@ export default class bevImgContorl {
   // 初始化threejs
   init() {
     this.scene = new THREE.Scene();
-    // this.scene.background = "rgba(255, 255, 255, 0)";
-    // this.scene.background = new THREE.Color().setHSL(0.6, 0, 1);
-    // this.scene.fog = new THREE.Fog(this.scene.background, 1, 5000);
     let rect = this.rgb_data.dom.getBoundingClientRect();
-    var width = rect.width * 2 - 30;
-    var height = rect.height * 2 - 30;
-    // var width = (rect.width * document.documentElement.clientWidth) / 1080 - 26;
-    // var height =
-    //   (rect.height * document.documentElement.clientWidth) / 1080 - 26;
-    // var height =
-    //   rect.height -
-    //   40 -
-    //   document.getElementById("page_title").getBoundingClientRect().height;
+    var width = (rect.width * document.documentElement.clientWidth) / 1080 - 26;
+    var height =
+      (rect.height * document.documentElement.clientWidth) / 1080 - 26;
     this.camera = new THREE.PerspectiveCamera(80, width / height, 1, 10000);
     this.camera.position.set(0, -5, 30);
     // this.camera.position.set(0, -15, 6);
@@ -491,7 +474,7 @@ export default class bevImgContorl {
     this.camera.updateMatrix();
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: true
+      alpha: true,
     });
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(width, height);
@@ -585,22 +568,14 @@ export default class bevImgContorl {
         let gltf = this.objs[item.id].scene;
         if (item.id === "main_car") {
           const box = this.track(new THREE.Box3().setFromObject(gltf)),
-            center = box.getCenter(new THREE.Vector3());
+          center = box.getCenter(new THREE.Vector3());
           size = box.getSize(new THREE.Vector3());
           gltf.position.y = -(size.y / 2) - center.y;
           gltf.rotation.x = Math.PI / 2;
-          // 添加CSS 3DSprite标签
-          // var label3DSprite = this.tag3DSprite("主车"); //设置标签名称
-          // var pos3 = new THREE.Vector3();
-          // gltf.getWorldPosition(pos3); //获取obj世界坐标、
-          // pos3.z += 7;
-          // pos3.y += 6;
-          // console.log(pos3, "pos3")
-          // label3DSprite.position.copy(pos3); //标签标注在obj世界坐标
-          // this.scene.add(label3DSprite); //标签插入场景
+          gltf.rotation.y = Math.PI;
         } else if (item.id === "car") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
+          gltf.rotation.y = Math.PI / 2;
           gltf.position.y = -100;
           gltf.position.x = -100;
           size = this.ge3Dsize(gltf);
@@ -616,7 +591,6 @@ export default class bevImgContorl {
           gltf.scale.set(s, s, s);
         } else if (item.id === "bus") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
           gltf.position.y = -125;
           gltf.position.x = -125;
           size = this.ge3Dsize(gltf);
@@ -643,12 +617,12 @@ export default class bevImgContorl {
           gltf.scale.set(s, s, s);
         } else if (item.id === "bicycle") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
-          gltf.position.x = -123;
-          gltf.position.y = -144;
-          size = this.ge3Dsize(gltf);
-          s = 0.45 / size.x;
-          gltf.scale.set(s, s, s);
+          gltf.rotation.y = Math.PI / 2;
+          gltf.position.x = -122;
+          gltf.position.y = -143;
+          // size = this.ge3Dsize(gltf);
+          // s = 1 / size.x;
+          // gltf.scale.set(s, s, s);
           // gltf.scale.set(0.02, 0.02, 0.02);
         } else if (item.id === "pedestrian") {
           gltf.rotation.x = Math.PI / 2;
@@ -662,17 +636,17 @@ export default class bevImgContorl {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI / 2;
           gltf.position.x = 100;
-          gltf.position.y = -147;
+          gltf.position.y = -144;
           size = this.ge3Dsize(gltf);
-          s = 0.4 / size.z;
+          s = 0.8 / size.z;
           gltf.scale.set(s, s, s);
         } else if (item.id === "construction_vehicle") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
+          gltf.rotation.y = Math.PI / 3 * 2;
           gltf.position.x = 110;
-          gltf.position.y = -105;
+          gltf.position.y = -100;
           size = this.ge3Dsize(gltf);
-          s = 2.35 / size.x;
+          s = 6 / size.x;
           gltf.scale.set(s, s, s);
         }
         if (item.id !== "main_car") {
