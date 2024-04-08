@@ -115,8 +115,13 @@ export default class bevImgContorl {
     3: "rgba(192, 71, 70, 1)",
   };
   animationFrameId = null;
+  map = new Map();
 
   constructor() {
+    this.map.set(0, [80, 82, 79, 1]);
+    this.map.set(1, [255, 255, 255, 1]);
+    this.map.set(2, [0, 255, 0, 1]);
+    this.map.set(3, [255, 0, 0, 1]);
     this.rgb_data.dom = document.getElementById("bev_box");
     // 初始化three
     this.init();
@@ -143,6 +148,8 @@ export default class bevImgContorl {
       if (!data.bevs_point) return;
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
+        let a = await this.drawBev(200, 200, data.bev);
+        console.log(a, "a");
         if (data.bevs_point) {
           let arr3 = data.bevs_point.filter(item => {
             return item[0] === 3
@@ -159,7 +166,25 @@ export default class bevImgContorl {
       console.log(err, "err---getData");
     }
   }
-  
+  drawBev(w, h, bev) {
+    return new Promise((resolve, reject) => {
+      let canvas = new OffscreenCanvas(w, h);
+      let context = canvas.getContext("2d");
+      let imageBitmap;
+      let imgData = new ImageData(w, h);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        let num = bev[i / 4];
+        let color = this.map.get(num);
+        imgData.data[i + 0] = color[0];
+        imgData.data[i + 1] = color[1];
+        imgData.data[i + 2] = color[2];
+        imgData.data[i + 3] = 255;
+      }
+      context.putImageData(imgData, 0, 0);
+      imageBitmap = canvas.transferToImageBitmap();
+      resolve(imageBitmap);
+    });
+  }
   // 初始化道路元素
   setMeshRoad(points, directoin) {
     // console.log(points[0], directoin);
