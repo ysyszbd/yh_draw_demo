@@ -10,6 +10,10 @@ Module.onRuntimeInitialized = function () {
 let dataArray;
 let codecId = 0;
 let imageBitmap;
+let num = 0,
+  tem = 0,
+  old_t = 0;
+
 async function decodeArray(u8Array, key, view) {
   try {
     var ptr = Module._malloc(u8Array.length * u8Array.BYTES_PER_ELEMENT);
@@ -27,13 +31,23 @@ async function decodeArray(u8Array, key, view) {
         outputPtr + Module._getWidth() * Module._getHeight() * 4
       )
     );
-  
+    if (view === "foresight") {
+      console.log(Date.now(), "1111", key);
+      tem = tem + (Date.now() - old_t);
+      num++;
+      if (num > 50) {
+        console.log(tem / num, "pppppppppp");
+      }
+    }
     let rgbObj = {
       width: Module._getWidth(),
       height: Module._getHeight(),
       rgb: rgbData,
     };
     imageBitmap = await drawVideoBg(rgbObj, key);
+    if (view === "foresight") {
+      console.log(Date.now(), "2222", key);
+    }
     let message = {
       type: "image",
       // info: rgbObj,
@@ -63,7 +77,10 @@ onmessage = function (e) {
     // if (e.data.view === "foresight") {
     //   console.log(e.data.key, "-------------拿到数据，开始解码", Date.now());
     // }
-    
+    if (e.data.view === "foresight") {
+      old_t = Date.now();
+      console.log(Date.now(), "0000", e.data.key);
+    }
     decodeArray(e.data.video_data, e.data.key, e.data.view);
   }
 };
@@ -82,7 +99,7 @@ function drawVideoBg(info, key) {
     v_context.putImageData(imgData, 0, 0);
     v_context.fillStyle = "white";
     v_context.fillRect(10, 0, 180, 30);
-    v_context.font = "24px serif";
+    v_context.font = "28px serif";
     v_context.fillStyle = "red";
     v_context.fillText(key, 10, 20);
     resolve(v_canvas.transferToImageBitmap());

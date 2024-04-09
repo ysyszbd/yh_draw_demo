@@ -284,8 +284,8 @@ export function handleObjs(objs_data) {
           //   //   // obj_index[type].data.push(item);
           // item[0] = item[0];
           // item[1] = item[1];
-          item[0] = item[0] * scale;
-          item[1] = item[1] * scale;
+          // item[0] = item[0] * scale;
+          // item[1] = item[1] * scale;
           item[2] = 0;
           // item[9] += 0.5;
           // item[2] += 1.9

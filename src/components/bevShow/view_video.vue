@@ -32,6 +32,12 @@ let video_start = ref(false);
 let video_work = new Worker(
   new URL("../../controls/video/ffmpeg_decode.js", import.meta.url).href
 );
+let draw_work = new Worker(
+  new URL("../../controls/video/draw_worker.js", import.meta.url).href, 
+  {
+    type: "module"
+  }
+);
 const initAll = inject("initAll");
 onMounted(() => {
   yh_video.value = new VIDEO(props.video_id);

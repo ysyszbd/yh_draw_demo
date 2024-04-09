@@ -127,16 +127,35 @@ let foresight = ref(),
   animationFrameId = ref(null),
   object = null,
   key = null,
-  k = null;
-onMounted(() => {
-  const timerId = setInterval(() => {
-    now_time.value = formaData(new Date());
-  }, 1000);
-  timeChange.value = timerId;
-})
+  k = null,
+  startTime = ref(0),
+  timerId = ref(null);
+// runTimer(); // 启动定时器
+// function runTimer() {
+//   startTime.value = Date.now(); // 记录定时器开始的时间
+//   // 设置定时器
+//   timerId.value = setTimeout(function tick() {
+//     let elapsedTime = Date.now() - startTime.value; // 计算已经过去的时间
+
+//     // 检查定时器运行时间是否超过1000毫秒
+//     if (elapsedTime > 100) {
+//       // console.log("定时器运行超过1000毫秒，重建定时器");
+//       clearTimeout(timerId.value); // 销毁当前定时器
+//       runTimer(); // 重新创建并运行新的定时器
+//     } else {
+//       // console.log("定时器运行中，已过去 " + elapsedTime + " 毫秒");
+//       timerId.value = setTimeout(tick, 100); // 继续设置下一次执行
+//       animate();
+//     }
+//   }, 100); // 每100毫秒检查一次
+// }
+
+
+
 videoWorker.postMessage({ sign: "init" });
 // 视频worker
 videoWorker.onmessage = async (e) => {
+  // return;
   if (e.data.sign === "video") {
     // console.log("video111", e.data.key, video_ok_key.value);
     if (video_ok_key.value < 0) {
@@ -185,29 +204,40 @@ videoWorker.onmessage = async (e) => {
         MemoryPool.setInitVideo(e.data.key, e.data.lb_buffer, "left_back");
         MemoryPool.setInitVideo(e.data.key, e.data.lf_buffer, "left_front");
       }
-      if (MemoryPool.videosMap["foresight"].size > 4) {
+      if (MemoryPool.videosMap["foresight"].size > 0) {
         await updateVideo();
       }
+      animate()
     } else {
       console.error("时间戳", e.data.key, video_ok_key.value);
     }
   }
   if (e.data.sign === "bev") {
-    // console.log("bev111", e.data.v_objs);
-    if (video_ok_key.value > 0) {
-      let a = await handleObjsPoints(e.data.besic, e.data.objs);
+    // console.log("bev111");
+    // if (video_ok_key.value > 0) {
+      // let k = MemoryPool.keys.find((item) => {
+      //   return item === e.data.key;
+      // });
+      // MemoryPool.keys.push(e.data.key);
+      // let a = await handleObjsPoints(e.data.besic, e.data.objs);
       MemoryPool.bpMap.set(e.data.key, e.data.bp);
       MemoryPool.objsMap.set(e.data.key, e.data.objs);
-      MemoryPool.vObjsMap.set(e.data.key, a);
+      MemoryPool.vObjsMap.set(e.data.key, await handleObjsPoints(e.data.besic, e.data.objs));
       MemoryPool.bevMap.set(e.data.key, e.data.bev);
-    }
+      // if (MemoryPool.bpMap.size > 4) {
+      //   await updateVideo();
+      // }
+    // }
+    // animate()
   }
 };
 const props = defineProps(["initStatus"]);
 
 animate();
 async function animate() {
-  // console.log("animate", video_ok_key.value);
+  now_time.value = formaData(new Date());
+  // console.log("animate", Date.now());
+  // console.log(MemoryPool.keys.length, "-------keys.length");
   if (MemoryPool.keys.length > 0) {
     let key = MemoryPool.keys.shift();
     MemoryPool.startK.push(key);
@@ -296,9 +326,11 @@ async function updateVideo() {
       ]);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
+      MemoryPool.bevMap.delete(key)
       MemoryPool.bpMap.delete(key);
       MemoryPool.vObjsMap.delete(key);
       MemoryPool.objsMap.delete(key);
+      MemoryPool.clearMaps(key)
       key = null;
     }
     resolve("");
@@ -330,15 +362,8 @@ async function updataVideoStatus(message) {
     }
   }
 }
-getTime();
-function getTime() {
-  return formaData(new Date());
-}
 
 onUnmounted(() => {
-  if (timeChange.value) {
-    clearInterval(timeChange.value);
-  }
   MemoryPool.clear();
   videoWorker.terminate();
   ObserverInstance.removeAll();
@@ -354,7 +379,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: #0a439a;
-  color: rgba(80, 82, 79);
   background-image: url("@/assets/images/bg.png");
   background-repeat: no-repeat;
   background-size: 100% 100%;

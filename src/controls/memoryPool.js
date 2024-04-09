@@ -91,4 +91,40 @@ export default class MemoryPool {
       this.videosMap["left_front"].get(key) instanceof ImageBitmap 
     );
   }
+  clearMaps(key) {
+    this.objs_arr = this.getOld(key, this.objsMap);
+    if (this.objs_arr.length > 0) {
+      this.objs_arr.forEach((item) => {
+        this.objsMap.delete(item);
+      })
+    }
+    this.bp_arr = this.getOld(key, this.bpMap);
+    if (this.bp_arr.length > 0) {
+      this.bp_arr.forEach((item) => {
+        this.bpMap.delete(item);
+      })
+    }
+    this.v_objs_arr = this.getOld(key, this.vObjsMap);
+    if (this.objs_arr.length > 0) {
+      this.v_objs_arr.forEach((item) => {
+        this.vObjsMap.delete(item);
+      })
+    }
+    this.bev_arr = this.getOld(key, this.bevMap);
+    if (this.bev_arr.length > 0) {
+      this.bev_arr.forEach((item) => {
+        this.bevMap.delete(item);
+      })
+    }
+    // console.log(objs_arr, "objs_arr");
+  }
+  getOld(key, map) {
+    let arr_k = [];
+    // console.log(map, "map");
+    map.forEach((item, k) => {
+      if (k < key) arr_k.push(k);
+      // console.log(k, "pppppppppppp");
+    })
+    return arr_k;
+  }
 }

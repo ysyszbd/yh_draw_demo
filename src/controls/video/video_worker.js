@@ -31,15 +31,15 @@ const webSocketInit = (reconnect, webSocketInit) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
       if (object[1].length > 0) {
-        if (old_key <= 0) {
-          old_key = object[0]
-        }else {
-          if (old_key > object[0]) {
-            console.error("当前时间戳有问题:", old_key, object[0]);
-          }else {
-            old_key = object[0]
-          }
-        }
+        // if (old_key <= 0) {
+        //   old_key = object[0]
+        // }else {
+        //   if (old_key > object[0]) {
+        //     console.error("当前时间戳有问题:", old_key, object[0]);
+        //   }else {
+        //     old_key = object[0]
+        //   }
+        // }
         // console.log("video");
         f_buffer = v_uni8.slice(0, object[1][0].length);
         f_buffer.set(object[1][0]);
@@ -63,9 +63,15 @@ const webSocketInit = (reconnect, webSocketInit) => {
           key: object[0],
           sign: "video",
         });
+        f_buffer = null;
+        r_buffer = null;
+        rf_buffer = null;
+        rb_buffer = null;
+        lf_buffer = null;
+        lb_buffer = null;
       }
-      // console.log(object, "object");
       if (object[2][1] != 0) {
+        // console.log(object, "object");
         // let a = await handleObjsPoints(object[2], object[4]);
         // let b = await handleVO(object[2], object[4], object[0]);
         // console.log(a, "----------------------", object[0]);

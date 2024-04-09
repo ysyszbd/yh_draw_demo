@@ -116,6 +116,9 @@ export default class bevImgContorl {
   };
   animationFrameId = null;
   map = new Map();
+  bev_canvas = new OffscreenCanvas(200, 200);
+  bev_context = null;
+  bev_imgData;
 
   constructor() {
     this.map.set(0, [80, 82, 79, 1]);
@@ -126,7 +129,7 @@ export default class bevImgContorl {
     // 初始化three
     this.init();
     // 初始化canvas，并在three上绘制网格，将canvas贴上去
-    this.initBasicCanvas();
+    // this.initBasicCanvas();
     this.animate();
   }
   // 释放道路占用的内存
@@ -148,15 +151,16 @@ export default class bevImgContorl {
       if (!data.bevs_point) return;
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
-        // let a = await this.drawBev(200, 200, data.bev);
-        // console.log(a, "a");
-        // this.bev.ctx.drawImage(a, 0, 0);
+        // this.bev_imgData = await this.drawBev(data.bev);
+        // // console.log(a, "a");
+        // this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
+        // this.bev_imgData.close();
+        // this.bev_imgData = null;
         // this.mapBg.needsUpdate = true;
         if (data.bevs_point) {
           let arr3 = data.bevs_point.filter(item => {
             return item[0] === 3
           })
-          // console.log(arr3, "data.bevs_point");
           this.handleLine(data.bevs_point);
         }
         if (data.objs) {
@@ -168,23 +172,20 @@ export default class bevImgContorl {
       console.log(err, "err---getData");
     }
   }
-  drawBev(w, h, bev) {
+  drawBev(bev) {
     return new Promise((resolve, reject) => {
-      let canvas = new OffscreenCanvas(w, h);
-      let context = canvas.getContext("2d");
-      let imageBitmap;
-      let imgData = new ImageData(w, h);
-      for (let i = 0; i < imgData.data.length; i += 4) {
+      this.bev_context = this.bev_canvas.getContext("2d");
+      this.imgData = new ImageData(200, 200);
+      for (let i = 0; i < this.imgData.data.length; i += 4) {
         let num = bev[i / 4];
         let color = this.map.get(num);
-        imgData.data[i + 0] = color[0];
-        imgData.data[i + 1] = color[1];
-        imgData.data[i + 2] = color[2];
-        imgData.data[i + 3] = 255;
+        this.imgData.data[i + 0] = color[0];
+        this.imgData.data[i + 1] = color[1];
+        this.imgData.data[i + 2] = color[2];
+        this.imgData.data[i + 3] = 255;
       }
-      context.putImageData(imgData, 0, 0);
-      imageBitmap = canvas.transferToImageBitmap();
-      resolve(imageBitmap);
+      this.bev_context.putImageData(this.imgData, 0, 0);
+      resolve(this.bev_canvas.transferToImageBitmap());
     });
   }
   // 初始化道路元素
@@ -289,6 +290,7 @@ export default class bevImgContorl {
           this.lines.group.children[i].material.needsUpdate = true;
         }
         if (this.lines.group.children.length > 50) {
+          console.log("大于50---lines");
           for (let j = 50; j < this.lines.group.children.length; j++) {
             this.scene.remove(this.lines.group.children[j]);
             this.lines.group.children[j].geometry.dispose();
@@ -334,14 +336,15 @@ export default class bevImgContorl {
   async handle3D(type, data) {
     try {
       if (!this.objs.start) return;
-      console.log(data, "data")
+      // console.log(data, "data")
       let group = this.objs[`${type}_group`],
         tags = this.objs[`${type}_tags`],
         model = this.objs[type];
 
-      if (data.length < 0) {
-        if (group.children.length > 20) {
-          for (let j = 20; j < group.children.length; j++) {
+      if (data.length <= 0) {
+        if (group.children.length > 50) {
+          console.log("大于50---objs00000");
+          for (let j = 50; j < group.children.length; j++) {
             this.scene.remove(group.children[j]);
             this.dispose3D(group.children[j]);
             group.remove(group.children[j]);
@@ -391,8 +394,9 @@ export default class bevImgContorl {
             tags.children[i].position.copy(pos3);
             tags.children[i].element.innerHTML = data[i][12];
           }
-          if (group.children.length > 20) {
-            for (let j = 20; j < group.children.length; j++) {
+          if (group.children.length > 50) {
+            console.log("大于50---objs11111");
+            for (let j = 50; j < group.children.length; j++) {
               this.scene.remove(group.children[j]);
               this.dispose3D(group.children[j]);
               group.remove(group.children[j]);
@@ -496,8 +500,8 @@ export default class bevImgContorl {
     var height =
       (rect.height * document.documentElement.clientWidth) / 1080 - 26;
     this.camera = new THREE.PerspectiveCamera(80, width / height, 1, 10000);
-    // this.camera.position.set(0, -5, 30);
-    this.camera.position.set(0, -5, 55);
+    this.camera.position.set(0, -5, 30);
+    // this.camera.position.set(0, -5, 55);
     // this.camera.position.set(0, -15, 6);
     this.camera.lookAt(0, 0, 0);
     this.camera.updateMatrix();
@@ -535,7 +539,7 @@ export default class bevImgContorl {
     this.bev.ctx.scale(devicePixelRatio, devicePixelRatio);
     this.bev.ctx.imageSmoothingEnabled = true;
     this.bev.ctx.imageSmoothingQuality = "high";
-    this.bev.ctx.fillStyle = `#50524f`;
+    this.bev.ctx.fillStyle = `rgba(80, 82, 79, 0)`;
     this.bev.ctx.fillRect(0, 0, this.bev.dom.width, this.bev.dom.height);
     this.mapBg = this.track(new THREE.CanvasTexture(this.bev.dom));
     this.mapBg.colorSpace = THREE.SRGBColorSpace;
@@ -546,10 +550,11 @@ export default class bevImgContorl {
       new THREE.MeshPhongMaterial({
         map: this.mapBg,
         side: THREE.DoubleSide,
+        // opacity: 0,
+        // transparent: true
       })
     );
-    this.geometry = this.track(new THREE.PlaneGeometry(102.4, 102.4));
-    // this.geometry = this.track(new THREE.PlaneGeometry(60, 60));
+    this.geometry = this.track(new THREE.PlaneGeometry(60, 60));
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
   }
@@ -754,7 +759,7 @@ export default class bevImgContorl {
   setMesh() {
     // 一格5单位
     let gridHelper = new THREE.GridHelper(
-      102.4,
+      60,
       102.4,
       "rgb(238, 14, 14)",
       "rgb(158, 156, 153)"
