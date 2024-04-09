@@ -13,7 +13,8 @@ let v_buffer = new SharedArrayBuffer(5000000),
   rf_buffer,
   rb_buffer,
   lf_buffer,
-  lb_buffer;
+  lb_buffer,
+  bev_buffer;
 let old_key = 0;
 self.onmessage = async (e) => {
   if (e.data.sign === "init") {
@@ -31,16 +32,6 @@ const webSocketInit = (reconnect, webSocketInit) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
       if (object[1].length > 0) {
-        // if (old_key <= 0) {
-        //   old_key = object[0]
-        // }else {
-        //   if (old_key > object[0]) {
-        //     console.error("当前时间戳有问题:", old_key, object[0]);
-        //   }else {
-        //     old_key = object[0]
-        //   }
-        // }
-        // console.log("video");
         f_buffer = v_uni8.slice(0, object[1][0].length);
         f_buffer.set(object[1][0]);
         rf_buffer = v_uni8.slice(0, object[1][1].length);
@@ -72,16 +63,14 @@ const webSocketInit = (reconnect, webSocketInit) => {
       }
       if (object[2][1] != 0) {
         // console.log(object, "object");
-        // let a = await handleObjsPoints(object[2], object[4]);
-        // let b = await handleVO(object[2], object[4], object[0]);
-        // console.log(a, "----------------------", object[0]);
-        // console.log(b, "======================", object[0]);
+        let saf = await handleVO(object[2], object[4], object[0]);
+        bev_buffer = v_uni8.slice(0, object[3].length);
+        bev_buffer.set(object[3]);
         postMessage({
           bp: object[5],
-          objs: object[4],
-          bev: object[3],
-          // v_objs: a,
-          besic: object[2],
+          objs: saf.bev_objs,
+          bev: bev_buffer,
+          v_objs: saf.v_objs,
           key: object[0],
           sign: "bev",
         });
@@ -191,24 +180,28 @@ let view_i = {
   j,
   e0,
   e1,
-  obj_buffer = v_uni8.slice(0, 99),
+  obj_buffer,
+  o_buffer,
   objs_buffer = [],
+  os_buffer = [],
   arr,
   points_eight,
-  empty_arr;
+  empty_arr,
+  empty,
+  view_a;
 async function handleVO(base, objs, key) {
   try {
     return new Promise(async (resolve, reject) => {
       objs_buffer = [];
+      os_buffer = [];
       for (j = 0; j < objs.length; j++) {
         // console.log(objs[j][12], "lllllllll");
-        let empty = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+        empty = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
         arr = [];
         points_eight = await GetBoundingBoxPoints(
           ...objs[j].slice(0, 6),
           objs[j][9]
         );
-        console.log(points_eight, "points_eight");
         view_sign = {
           foresight: 0,
           right_front: 0,
@@ -217,7 +210,7 @@ async function handleVO(base, objs, key) {
           left_back: 0,
           right_back: 0,
         };
-        let view_a = {
+        view_a = {
           foresight: [],
           right_front: [],
           left_front: [],
@@ -225,7 +218,9 @@ async function handleVO(base, objs, key) {
           left_back: [],
           right_back: [],
         };
-
+        obj_buffer = v_uni8.slice(0, 99);
+        o_buffer = v_uni8.slice(0, objs[j].length);
+        o_buffer.set(objs[j]);
         points_eight.filter((item) => {
           for (e0 in view_sign) {
             transposeMatrix = base[3][view_ship[e0]];
@@ -240,7 +235,6 @@ async function handleVO(base, objs, key) {
           }
         });
         v_arr.filter((ele) => {
-          console.log(ele,"elelllllllllllllll");
           if (view_sign[ele.sign] === 8) {
             // arr.push(...empty);
             view_a[ele.sign].push(...[
@@ -255,47 +249,26 @@ async function handleVO(base, objs, key) {
             ]);
           } else {
             points_eight.filter((item, index) => {
-              let a = project_lidar2img(
+              view_a[ele.sign].push(project_lidar2img(
                 item,
                 base[3][ele.v_index],
                 base[4][ele.v_index],
                 base[5],
                 base[6][ele.v_index],
                 base[8][ele.v_index]
-              );
-              view_a[ele.sign].push(a);
+              ));
             });
           }
           arr.push(...view_a[ele.sign].flat());
         });
-        console.log(arr, "pp", view_a);
         obj_buffer.set(arr, 3);
         obj_buffer.set([objs[j][7]], 0);
         obj_buffer.set([objs[j][8]], 1);
         obj_buffer.set([objs[j][12]], 2);
-        // for (e1 in view_sign) {
-        //   if (view_sign[e1] != 8) {
-        //   }
-        //   points_eight.filter((item, index) => {
-        //     let a = project_lidar2img(
-        //       item,
-        //       base[3][view_ship[e1]],
-        //       base[4][view_ship[e1]],
-        //       base[5],
-        //       base[6][view_ship[e1]],
-        //       base[8][view_ship[e1]]
-        //     );
-        //     // console.log(a, "aaaa", key);
-        //     arr.splice(view_ship_arr[e1] + index * 2, 2, a[0], a[1]);
-        //   });
-        //   obj_buffer.set(arr, 3);
-        //   obj_buffer.set([objs[j][7]], 0);
-        //   obj_buffer.set([objs[j][8]], 1);
-        //   obj_buffer.set([objs[j][12]], 2);
-        // }
         objs_buffer.push(obj_buffer);
+        os_buffer.push(o_buffer);
       }
-      resolve(objs_buffer);
+      resolve({v_objs: objs_buffer, bev_objs: os_buffer});
     });
   } catch (err) {
     console.log(err, "err---handleVO");
@@ -433,7 +406,7 @@ function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
 
   // console.log(crop, "crop");
   // crop = [0, -80]
-  if (crop[1] == -160) crop[1] = -80;
+  // if (crop[1] == -160) crop[1] = -80;
   // crop[1] == -160;
 
   x_crop = x_scale + crop[0];

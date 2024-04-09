@@ -55,9 +55,6 @@ async function decodeArray(u8Array, key, view) {
       key: key,
       view: view,
     };
-    // if (view === "foresight") {
-    //   console.log(key, "-------------解码完成，传回主线程的子组件", Date.now());
-    // }
     postMessage(message, [imageBitmap]);
   } catch (err) {
     console.log(err, "er====decodeArray");
@@ -73,10 +70,6 @@ onmessage = function (e) {
       Module._close();
       Module._init(codecId);
     }
-    // console.log(e.data, "e.data");
-    // if (e.data.view === "foresight") {
-    //   console.log(e.data.key, "-------------拿到数据，开始解码", Date.now());
-    // }
     if (e.data.view === "foresight") {
       old_t = Date.now();
       console.log(Date.now(), "0000", e.data.key);

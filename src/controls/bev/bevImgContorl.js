@@ -152,7 +152,6 @@ export default class bevImgContorl {
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
         // this.bev_imgData = await this.drawBev(data.bev);
-        // // console.log(a, "a");
         // this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
         // this.bev_imgData.close();
         // this.bev_imgData = null;

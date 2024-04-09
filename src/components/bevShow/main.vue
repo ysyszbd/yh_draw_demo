@@ -86,6 +86,7 @@ import {
   onUnmounted,
   onBeforeMount,
   onMounted,
+  provide 
 } from "vue";
 import { ObserverInstance } from "@/controls/event/observer";
 import Ws from "@/controls/ws.js";
@@ -105,6 +106,12 @@ let foresight = ref(),
     new URL("../../controls/video/video_worker.js", import.meta.url),
     {
       type: "module",
+    }
+  ),
+  draw_work = new Worker(
+    new URL("../../controls/video/draw_worker.js", import.meta.url).href, 
+    {
+      type: "module"
     }
   ),
   time = ref(),
@@ -130,28 +137,20 @@ let foresight = ref(),
   k = null,
   startTime = ref(0),
   timerId = ref(null);
-// runTimer(); // 启动定时器
-// function runTimer() {
-//   startTime.value = Date.now(); // 记录定时器开始的时间
-//   // 设置定时器
-//   timerId.value = setTimeout(function tick() {
-//     let elapsedTime = Date.now() - startTime.value; // 计算已经过去的时间
-
-//     // 检查定时器运行时间是否超过1000毫秒
-//     if (elapsedTime > 100) {
-//       // console.log("定时器运行超过1000毫秒，重建定时器");
-//       clearTimeout(timerId.value); // 销毁当前定时器
-//       runTimer(); // 重新创建并运行新的定时器
-//     } else {
-//       // console.log("定时器运行中，已过去 " + elapsedTime + " 毫秒");
-//       timerId.value = setTimeout(tick, 100); // 继续设置下一次执行
-//       animate();
-//     }
-//   }, 100); // 每100毫秒检查一次
-// }
-
-
-
+  provide("MemoryPool", MemoryPool);
+draw_work.onmessage = async (e) => {
+  // if (e.data.sign === "v_draw") {
+  //   // console.log(e.data,"ppppppppppppppp");
+  //   console.log(Date.now(), "2", e.data.key);
+  //   MemoryPool.ovMap["foresight"].set(e.data.key, e.data.f);
+  //   MemoryPool.ovMap["rearview"].set(e.data.key, e.data.r);
+  //   MemoryPool.ovMap["right_front"].set(e.data.key, e.data.rf);
+  //   MemoryPool.ovMap["right_back"].set(e.data.key, e.data.rb);
+  //   MemoryPool.ovMap["left_back"].set(e.data.key, e.data.lb);
+  //   MemoryPool.ovMap["left_front"].set(e.data.key, e.data.lf);
+  //   console.log(Date.now(), "3", e.data.key);
+  // }
+}
 videoWorker.postMessage({ sign: "init" });
 // 视频worker
 videoWorker.onmessage = async (e) => {
@@ -213,22 +212,12 @@ videoWorker.onmessage = async (e) => {
     }
   }
   if (e.data.sign === "bev") {
-    // console.log("bev111");
-    // if (video_ok_key.value > 0) {
-      // let k = MemoryPool.keys.find((item) => {
-      //   return item === e.data.key;
-      // });
-      // MemoryPool.keys.push(e.data.key);
-      // let a = await handleObjsPoints(e.data.besic, e.data.objs);
+    // let a = await handleObjsPoints(e.data.besic, e.data.objs)
       MemoryPool.bpMap.set(e.data.key, e.data.bp);
       MemoryPool.objsMap.set(e.data.key, e.data.objs);
-      MemoryPool.vObjsMap.set(e.data.key, await handleObjsPoints(e.data.besic, e.data.objs));
+      // MemoryPool.vObjsMap.set(e.data.key, a);
       MemoryPool.bevMap.set(e.data.key, e.data.bev);
-      // if (MemoryPool.bpMap.size > 4) {
-      //   await updateVideo();
-      // }
-    // }
-    // animate()
+      MemoryPool.v_o.set(e.data.key, e.data.v_objs);
   }
 };
 const props = defineProps(["initStatus"]);
@@ -237,7 +226,7 @@ animate();
 async function animate() {
   now_time.value = formaData(new Date());
   // console.log("animate", Date.now());
-  // console.log(MemoryPool.keys.length, "-------keys.length");
+  console.log(MemoryPool.keys.length, "-------keys.length");
   if (MemoryPool.keys.length > 0) {
     let key = MemoryPool.keys.shift();
     MemoryPool.startK.push(key);
@@ -275,17 +264,29 @@ async function animate() {
         ),
       ]);
     }
+    // if (MemoryPool.v_o.has(key)) {
+    //   draw_work.postMessage({
+    //     objs: MemoryPool.v_o.get(key),
+    //     key: key,
+    //     sign: "v_draw"
+    //   });
+    // }
   }
-  animationFrameId.value = requestAnimationFrame(() => animate());
+  // console.log(Date.now(), "ppppp");
+  animationFrameId.value = requestAnimationFrame(() => {
+    animate()
+  });
 }
 
 // 更新视频--按照视频帧
 async function updateVideo() {
   return new Promise(async (resolve, reject) => {
     let key = MemoryPool.startK[0];
+    console.log(MemoryPool.objsMap.size, "objsMap.size");
     let objs = MemoryPool.objsMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
-    let v_objs = MemoryPool.vObjsMap.get(key);
+    // let v_objs = MemoryPool.vObjsMap.get(key);
+    let v_o = MemoryPool.v_o.get(key);
     if (MemoryPool.hasVideo(key)) {
       Promise.all([
         await BEV.value.drawBev({
@@ -296,40 +297,47 @@ async function updateVideo() {
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
           key: key,
-          objs: v_objs,
+          // objs: v_objs,
+          v_o: v_o
         }),
         await right_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_front"),
           key: key,
-          objs: v_objs,
+          // objs: v_objs,
+          v_o: v_o
         }),
         await left_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_front"),
           key: key,
-          objs: v_objs,
+          // objs: v_objs,
+          v_o: v_o
         }),
         await rearview.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "rearview"),
           key: key,
-          objs: v_objs,
+          // objs: v_objs,
+          v_o: v_o
         }),
         await left_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_back"),
           key: key,
-          objs: v_objs,
+          // objs: v_objs,
+          v_o: v_o
         }),
         await right_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_back"),
           key: key,
-          objs: v_objs,
+          // objs: v_objs,
+          v_o: v_o
         }),
       ]);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
       MemoryPool.bevMap.delete(key)
       MemoryPool.bpMap.delete(key);
-      MemoryPool.vObjsMap.delete(key);
+      // MemoryPool.vObjsMap.delete(key);
       MemoryPool.objsMap.delete(key);
+      MemoryPool.v_o.delete(key)
       MemoryPool.clearMaps(key)
       key = null;
     }
