@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-08 11:47:44
+ * @LastEditTime: 2024-04-09 21:35:47
  * @Description: 视频相关worker,只负责视频的数据接收
  */
 import { decode } from "@msgpack/msgpack";
@@ -23,7 +23,7 @@ self.onmessage = async (e) => {
 };
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 const webSocketInit = (reconnect, webSocketInit) => {
-  ws = new WebSocket("ws://192.168.1.66:1234");
+  ws = new WebSocket("ws://192.168.1.161:1234");
   ws.binaryType = "arraybuffer";
   ws.onopen = function () {
     console.log("已连接TCP服务器");

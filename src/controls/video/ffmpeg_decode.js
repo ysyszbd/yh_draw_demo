@@ -31,23 +31,23 @@ async function decodeArray(u8Array, key, view) {
         outputPtr + Module._getWidth() * Module._getHeight() * 4
       )
     );
-    if (view === "foresight") {
-      console.log(Date.now(), "1111", key);
-      tem = tem + (Date.now() - old_t);
-      num++;
-      if (num > 50) {
-        console.log(tem / num, "pppppppppp");
-      }
-    }
+    // if (view === "foresight") {
+    //   // console.log(Date.now(), "1111", key);
+    //   tem = tem + (Date.now() - old_t);
+    //   num++;
+    //   if (num > 50) {
+    //     // console.log(tem / num, "pppppppppp");
+    //   }
+    // }
     let rgbObj = {
       width: Module._getWidth(),
       height: Module._getHeight(),
       rgb: rgbData,
     };
     imageBitmap = await drawVideoBg(rgbObj, key);
-    if (view === "foresight") {
-      console.log(Date.now(), "2222", key);
-    }
+    // if (view === "foresight") {
+    //   console.log(Date.now(), "2222", key);
+    // }
     let message = {
       type: "image",
       // info: rgbObj,
@@ -70,10 +70,10 @@ onmessage = function (e) {
       Module._close();
       Module._init(codecId);
     }
-    if (e.data.view === "foresight") {
-      old_t = Date.now();
-      console.log(Date.now(), "0000", e.data.key);
-    }
+    // if (e.data.view === "foresight") {
+    //   old_t = Date.now();
+    //   // console.log(Date.now(), "0000", e.data.key);
+    // }
     decodeArray(e.data.video_data, e.data.key, e.data.view);
   }
 };

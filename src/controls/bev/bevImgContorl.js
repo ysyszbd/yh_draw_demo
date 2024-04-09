@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-07 16:05:43
+ * @LastEditTime: 2024-04-09 21:49:23
  * @Description:
  */
 /*
@@ -366,7 +366,7 @@ export default class bevImgContorl {
             let c_model = model.scene.clone();
             c_model.matrixAutoUpdate = true;
             c_model.position.set(-point[1], point[0], 0);
-            c_model.rotation.y = -point[9];
+            c_model.rotation.y = point[9] + Math.PI / 2;
             group.add(c_model);
             let label3DSprite = this.tag3DSprite(point[12]);
             let pos3 = new THREE.Vector3();
@@ -385,7 +385,7 @@ export default class bevImgContorl {
         if (group.children.length >= data.length) {
           for (let i = 0; i < data.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = -data[i][9];
+            group.children[i].rotation.y = data[i][9] + Math.PI / 2;
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
             pos3.z = data[i][5] + 1;
@@ -411,7 +411,7 @@ export default class bevImgContorl {
         } else {
           for (let i = 0; i < group.children.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = -data[i][9];
+            group.children[i].rotation.y = data[i][9] + Math.PI / 2;
 
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
@@ -424,7 +424,7 @@ export default class bevImgContorl {
             let l_c_model = model.scene.clone();
             l_c_model.matrixAutoUpdate = true;
             l_c_model.position.set(-data[j][1], data[j][0], 0);
-            l_c_model.rotation.y = data[j][9];
+            l_c_model.rotation.y = data[j][9] + Math.PI / 2;
             group.add(l_c_model);
             let label3DSprite = this.tag3DSprite(data[j][12]);
             let pos3 = new THREE.Vector3();

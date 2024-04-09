@@ -226,7 +226,7 @@ animate();
 async function animate() {
   now_time.value = formaData(new Date());
   // console.log("animate", Date.now());
-  console.log(MemoryPool.keys.length, "-------keys.length");
+  // console.log(MemoryPool.keys.length, "-------keys.length");
   if (MemoryPool.keys.length > 0) {
     let key = MemoryPool.keys.shift();
     MemoryPool.startK.push(key);
@@ -282,7 +282,7 @@ async function animate() {
 async function updateVideo() {
   return new Promise(async (resolve, reject) => {
     let key = MemoryPool.startK[0];
-    console.log(MemoryPool.objsMap.size, "objsMap.size");
+    // console.log(MemoryPool.objsMap.size, "objsMap.size");
     let objs = MemoryPool.objsMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
     // let v_objs = MemoryPool.vObjsMap.get(key);
