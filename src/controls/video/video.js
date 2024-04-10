@@ -86,30 +86,32 @@ export default class Video {
       data.bg.close();
     }
     if (data.v_o) {
-    // if (data.objs) {
-      // console.log(data.v_o, "==============");
-      // let a = await this.drawVideoObjs0(data.objs, this.id, data.key);
-      // this.helper_ctx.drawImage(a, 0, 0, w, h);
-      // a.close();
-      // a = null;
       this.objs_img = await this.drawVideoObjs(data.v_o, this.id, data.key);
       this.helper_ctx.drawImage(this.objs_img, 0, 0, w, h);
       this.objs_img.close();
       this.objs_img = null;
+    }
+    if (data.objs) {
+      let a = await this.drawVideoObjs0(data.objs, this.id, data.key);
+      this.helper_ctx.drawImage(a, 0, 0, w, h);
+      a.close();
+      a = null;
     }
   }
   // 各view渲染障碍物
   drawVideoObjs(objs, view, key) {
     return new Promise((resolve, reject) => {
       objs.filter((item) => {
-        this.color = this.box_color[`${item[0]}-${item[1]}`];
+        this.color = this.box_color[`${item[0]}-${item[1]}`] ? this.box_color[`${item[0]}-${item[1]}`] : "red";
         this.obj_data = [
           ...item.slice(0, 3),
         ];
+        // console.log(item, "item");
         let box = construct2DArray(item.slice(
           this.view_ship_arr[view] + 3,
           this.view_ship_arr[view] + 19
         ), 8, 2);
+        // console.log(box, "box");
         this.v_objs_cxt.beginPath();
         this.v_objs_cxt.fillStyle = this.color;
         this.v_objs_cxt.font = "18px serif";
@@ -125,11 +127,11 @@ export default class Video {
         this.v_objs_cxt.fillText(this.obj_data[2], x, y);
         this.drawBox(box);
       });
-      this.v_objs_cxt.fillStyle = "white";
-      this.v_objs_cxt.fillRect(10, 20, 180, 30);
-      this.v_objs_cxt.font = "28px serif";
-      this.v_objs_cxt.fillStyle = "green";
-      this.v_objs_cxt.fillText(key, 10, 44);
+      // this.v_objs_cxt.fillStyle = "white";
+      // this.v_objs_cxt.fillRect(10, 20, 180, 30);
+      // this.v_objs_cxt.font = "28px serif";
+      // this.v_objs_cxt.fillStyle = "green";
+      // this.v_objs_cxt.fillText(key, 10, 44);
       resolve(this.v_objs_canvas.transferToImageBitmap());
     });
   }

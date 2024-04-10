@@ -119,6 +119,7 @@ export default class bevImgContorl {
   bev_canvas = new OffscreenCanvas(200, 200);
   bev_context = null;
   bev_imgData;
+  points_g = new THREE.Object3D();
 
   constructor() {
     this.map.set(0, [80, 82, 79, 1]);
@@ -130,6 +131,7 @@ export default class bevImgContorl {
     this.init();
     // 初始化canvas，并在three上绘制网格，将canvas贴上去
     // this.initBasicCanvas();
+    this.initPoints();
     this.animate();
   }
   // 释放道路占用的内存
@@ -157,10 +159,9 @@ export default class bevImgContorl {
         // this.bev_imgData = null;
         // this.mapBg.needsUpdate = true;
         if (data.bevs_point) {
-          let arr3 = data.bevs_point.filter(item => {
-            return item[0] === 3
-          })
+          // console.log(data.bevs_point, "data.bevs_point");
           this.handleLine(data.bevs_point);
+          // this.setPoints(data.bevs_point);
         }
         if (data.objs) {
           await this.handleObjs(await handleObjs(data.objs));
@@ -239,7 +240,7 @@ export default class bevImgContorl {
       const matLine = this.track(
         new LineMaterial({
           color: color,
-          linewidth: 20,
+          linewidth: 10,
           dashed: false,
           vertexColors: false,
         })
@@ -252,12 +253,43 @@ export default class bevImgContorl {
       console.log(err, "err---setWidthLine");
     }
   }
+  initPoints() {
+    this.pointsGeometry = new THREE.BufferGeometry();
+    this.pointsMaterial = new THREE.PointsMaterial({
+      color: 0xff0000,
+      size: 0.8, // 设置点的大小
+      sizeAttenuation: true // 确定点的大小是否随着距离摄像机远近而衰减
+    });
+  }
+  setPoints(bevs_point) {
+    if (this.points_g.children.length !== 0) {
+      this.points_g.children.forEach((item) => {
+        this.scene.remove(item);
+        item.geometry.dispose();
+        item.material.dispose();
+      });
+      this.scene.remove(this.points_g);
+      this.points_g.clear();
+    }
+    bevs_point.forEach((item) => {
+      let p_g = this.pointsGeometry.clone();
+      let points_arr = this.handlePoints(item[1]);
+      p_g.setAttribute('position', new THREE.Float32BufferAttribute(points_arr, 3));
+      let p_m = this.pointsMaterial.clone();
+      const clonedPoints = new THREE.Points(p_g, p_m);
+      
+      this.points_g.add(clonedPoints);
+      this.scene.add(this.points_g);
+    })
+  }
   // 处理带宽度的线条坐标数据
   handlePoints(pointsArr) {
     // 处理坐标数据
     const points = [];
-    pointsArr.forEach((item) => {
-      points.push(-item[1], item[0], 0);
+    pointsArr.forEach((item, index) => {
+      if (index === 0 || index === pointsArr.length - 1 || index % 10 == 0) {
+        points.push(-item[1], item[0], 0);
+      }
     });
     return points;
   }
@@ -271,65 +303,81 @@ export default class bevImgContorl {
     });
   }
   async handleLine(bevs_point) {
+    if (this.lines.group.children.length !== 0) {
+      this.lines.group.children.forEach((item) => {
+        this.scene.remove(item);
+        item.geometry.dispose();
+        item.material.dispose();
+      });
+      this.scene.remove(this.lines.group);
+      this.lines.group.clear();
+    }
+
     if (this.lines.group.children.length <= 0) {
       bevs_point.forEach((item) => {
         let line = this.setWidthLine(item[1], this.lineColors[item[0]]);
         this.lines.group.add(line);
       });
       this.scene.add(this.lines.group);
-    } else {
-      if (this.lines.group.children.length >= bevs_point.length) {
-        for (let i = 0; i < bevs_point.length; i++) {
-          let points = this.handlePoints(bevs_point[i][1]);
-          // console.log(points, "points");
-          this.lines.group.children[i].geometry.setPositions(points);
-          this.lines.group.children[i].material.color.set(
-            this.lineColors[bevs_point[i][0]]
-          );
-          this.lines.group.children[i].material.needsUpdate = true;
-        }
-        if (this.lines.group.children.length > 50) {
-          console.log("大于50---lines");
-          for (let j = 50; j < this.lines.group.children.length; j++) {
-            this.scene.remove(this.lines.group.children[j]);
-            this.lines.group.children[j].geometry.dispose();
-            this.lines.group.children[j].material.dispose();
-            this.lines.group.remove(this.lines.group.children[j]);
-          }
-        } else {
-          for (
-            let j = bevs_point.length;
-            j < this.lines.group.children.length;
-            j++
-          ) {
-            this.lines.group.children[j].geometry.setPositions([
-              100, 100, 0, 100, 100, 0,
-            ]);
-          }
-        }
-      } else {
-        for (let i = 0; i < this.lines.group.children.length; i++) {
-          let points = this.handlePoints(bevs_point[i][1]);
-          this.lines.group.children[i].geometry.setPositions(points);
-          this.lines.group.children[i].material.color.set(
-            this.lineColors[bevs_point[i][0]]
-          );
-          this.lines.group.children[i].material.needsUpdate = true;
-        }
-        for (
-          let j = this.lines.group.children.length;
-          j < bevs_point.length;
-          j++
-        ) {
-          let line = this.setWidthLine(
-            bevs_point[j][1],
-            this.lineColors[bevs_point[j][0]]
-          );
-          this.lines.group.add(line);
-        }
-        this.scene.add(this.lines.group);
-      }
-    }
+    } 
+    // else {
+
+      // if (this.lines.group.children.length > 50) {
+      //   console.log("大于50---lines");
+      //   for (let j = 50; j < this.lines.group.children.length; j++) {
+      //     this.scene.remove(this.lines.group.children[j]);
+      //     this.lines.group.children[j].geometry.dispose();
+      //     this.lines.group.children[j].material.dispose();
+      //     this.lines.group.remove(this.lines.group.children[j]);
+      //   }
+      // }
+
+      // if (this.lines.group.children.length >= bevs_point.length) {
+      //   console.log("llllll");
+      //   for (let i = 0; i < bevs_point.length; i++) {
+      //     let points = this.handlePoints(bevs_point[i][1]);
+      //     this.lines.group.children[i].geometry.setPositions(points);
+      //     this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
+      //     this.lines.group.children[i].material.color.set(
+      //       this.lineColors[bevs_point[i][0]]
+      //     );
+      //     this.lines.group.children[i].material.needsUpdate = true;
+      //   }
+      //   for (
+      //     let j = bevs_point.length;
+      //     j < this.lines.group.children.length;
+      //     j++
+      //   ) {
+      //     this.lines.group.children[j].geometry.setPositions([
+      //       100, 100, 0, 100, 100, 0,
+      //     ]);
+      //     this.lines.group.children[j].geometry.attributes.position.needsUpdate = true;
+      //   }
+      // } else {
+      //   for (let i = 0; i < this.lines.group.children.length; i++) {
+      //     let points = this.handlePoints(bevs_point[i][1]);
+      //     this.lines.group.children[i].geometry.setPositions(points);
+      //     this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
+      //     this.lines.group.children[i].material.color.set(
+      //       this.lineColors[bevs_point[i][0]]
+      //     );
+      //     this.lines.group.children[i].material.needsUpdate = true;
+      //   }
+      //   for (
+      //     let j = this.lines.group.children.length;
+      //     j < bevs_point.length;
+      //     j++
+      //   ) {
+      //     let line = this.setWidthLine(
+      //       bevs_point[j][1],
+      //       this.lineColors[bevs_point[j][0]]
+      //     );
+      //     this.lines.group.add(line);
+      //   }
+      //   this.scene.add(this.lines.group);
+      // }
+    // }
+    
   }
   // 操作具体的障碍物
   async handle3D(type, data) {
@@ -631,7 +679,7 @@ export default class bevImgContorl {
           gltf.position.x = -125;
           size = this.ge3Dsize(gltf);
           s = 2.5 / size.x;
-          // gltf.scale.set(2, 2, 2);
+          gltf.scale.set(0.7, 0.7, 0.7);
         } else if (item.id === "trailer") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;

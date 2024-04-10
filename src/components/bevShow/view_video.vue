@@ -40,18 +40,12 @@ let video_work = new Worker(
 // );
 let key = ref(null);
 let bg = ref(null);
-const initAll = inject("initAll");
 const MemoryPool = inject("MemoryPool");
+const videoInit = inject("videoInit");
 onMounted(() => {
   yh_video.value = new VIDEO(props.video_id);
   initVideoWork();
 });
-// draw_work.onmessage = (e) => {
-//   if (e.data.sign === "v_draw") {
-//     console.log(e.data,"lllllllllll", key.value, bg.value);
-
-//   }
-// }
 function drawVideo(data) {
   return new Promise((resolve, reject) => {
     yh_video.value.drawVideo(data);
@@ -83,9 +77,6 @@ function initVideoWork() {
   video_work.onmessage = (event) => {
     if (event.data.type === "message") {
       if (event.data.info == "init") {
-        initAll({
-          id: props.video_id,
-        });
         changeCodecId(173);
       }
     } else {

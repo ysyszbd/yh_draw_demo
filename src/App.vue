@@ -3,36 +3,21 @@ import mainPage from "@/components/bevShow/main.vue";
 import loading from "@/components/bevShow/loading.vue";
 import { ObserverInstance } from "@/controls/event/observer";
 import { ref, onUnmounted, provide } from "vue";
-let work_init_arr = ref([]),
-  work_status = ref(false),
-  model3D_status = ref(false),
-  all_status = ref(false),
+let model3D_status = ref(false),
   video_start = ref(false),
   observerListenerList = [
     {
       eventName: "INIT_OK",
-      fn: initAll.bind(this),
+      fn: modelInit.bind(this),
     },
   ];
-provide("initAll", initAll);
+provide("videoInit", videoInit);
 ObserverInstance.selfAddListenerList(observerListenerList, "yh_init");
-function initAll(data) {
-  // console.log(data, "---------");
-  if (data.id === "objs") {
-    model3D_status.value = true;
-  } else if (data.id === "video") {
-    video_start.value = true;
-  } else {
-    work_init_arr.value.push(data.id);
-    if (work_init_arr.value.length === 1) {
-      work_status.value = true;
-    }
-  }
-  if (work_status.value && model3D_status.value) {
-    all_status.value = true;
-  } else {
-    all_status.value = false;
-  }
+function videoInit() {
+  video_start.value = true;
+}
+function modelInit() {
+  model3D_status.value = true;
 }
 onUnmounted(() => {
   ObserverInstance.removeAll();
@@ -42,8 +27,8 @@ onUnmounted(() => {
 <template>
   <div class="main_box">
     <!-- <loading /> -->
-    <!-- <loading v-if="!all_status" class="loading_page"/> -->
-    <mainPage :initStatus="all_status" class="main_page" />
+    <loading v-if="!model3D_status || !video_start" class="loading_page"/>
+    <mainPage :videoStart="video_start" class="main_page" />
   </div>
 </template>
 

@@ -188,72 +188,76 @@ let view_i = {
   points_eight,
   empty_arr;
 export async function handleObjsPoints(base, objs) {
-  return new Promise(async (resolve, reject) => {
-    for (i = 0; i < 6; i++) {
-      K[view_i[i]] = base[4][i];
-      ext_lidar2cam[view_i[i]] = base[3][i];
-      D[view_i[i]] = base[8][i];
-      crop[view_i[i]] = base[6][i];
-    }
-    // console.log(objs, "objs");
-    for (j = 0; j < objs.length; j++) {
-      let data = {
-        points_eight: [],
-        foresight: [],
-        rearview: [],
-        right_front: [],
-        right_back: [],
-        left_back: [],
-        left_front: [],
-      };
-
-      data.points_eight = await GetBoundingBoxPoints(
-        ...objs[j].slice(0, 6),
-        objs[j][9]
-      );
-      let view_sign = {
-        foresight: 0,
-        rearview: 0,
-        right_front: 0,
-        right_back: 0,
-        left_back: 0,
-        left_front: 0,
-      };
-      data.points_eight.filter((item) => {
-        for (e0 in view_sign) {
-          let transposeMatrix = ext_lidar2cam[e0];
-          let pt_cam_z_num =
-            item[0] * transposeMatrix[8] +
-            item[1] * transposeMatrix[9] +
-            item[2] * transposeMatrix[10] +
-            transposeMatrix[11];
-          if (pt_cam_z_num < 0.2) {
-            view_sign[e0]++;
+  try {
+    return new Promise(async (resolve, reject) => {
+      for (i = 0; i < 6; i++) {
+        K[view_i[i]] = base[4][i];
+        ext_lidar2cam[view_i[i]] = base[3][i];
+        D[view_i[i]] = base[8][i];
+        crop[view_i[i]] = base[6][i];
+      }
+      // console.log(objs, "objs");
+      for (j = 0; j < objs.length; j++) {
+        let data = {
+          points_eight: [],
+          foresight: [],
+          rearview: [],
+          right_front: [],
+          right_back: [],
+          left_back: [],
+          left_front: [],
+        };
+  
+        data.points_eight = await GetBoundingBoxPoints(
+          ...objs[j].slice(0, 6),
+          objs[j][9]
+        );
+        let view_sign = {
+          foresight: 0,
+          rearview: 0,
+          right_front: 0,
+          right_back: 0,
+          left_back: 0,
+          left_front: 0,
+        };
+        data.points_eight.filter((item) => {
+          for (e0 in view_sign) {
+            let transposeMatrix = ext_lidar2cam[e0];
+            let pt_cam_z_num =
+              item[0] * transposeMatrix[8] +
+              item[1] * transposeMatrix[9] +
+              item[2] * transposeMatrix[10] +
+              transposeMatrix[11];
+            if (pt_cam_z_num < 0.2) {
+              view_sign[e0]++;
+            }
+          }
+        });
+        for (e1 in view_sign) {
+          if (view_sign[e1] === 8) {
+            data[e1] = [];
+          } else {
+            data.points_eight.filter((item) => {
+              data[e1].push(
+                project_lidar2img(
+                  item,
+                  ext_lidar2cam[e1],
+                  K[e1],
+                  base[5],
+                  crop[e1],
+                  D[e1]
+                )
+              );
+            });
           }
         }
-      });
-      for (e1 in view_sign) {
-        if (view_sign[e1] === 8) {
-          data[e1] = [];
-        } else {
-          data.points_eight.filter((item) => {
-            data[e1].push(
-              project_lidar2img(
-                item,
-                ext_lidar2cam[e1],
-                K[e1],
-                base[5],
-                crop[e1],
-                D[e1]
-              )
-            );
-          });
-        }
+        objs[j].push(data);
       }
-      objs[j].push(data);
-    }
-    resolve(objs);
-  });
+      resolve(objs);
+    });
+  }catch(err) {
+    console.log(err, "err-----");
+  }
 }
 let scale = 51.2 / 30;
 // 计算障碍物信息

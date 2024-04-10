@@ -23,9 +23,10 @@ self.onmessage = async (e) => {
 };
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 const webSocketInit = (reconnect, webSocketInit) => {
-  ws = new WebSocket("ws://192.168.1.161:1234");
+  ws = new WebSocket("ws://192.168.8.66:1234");
   ws.binaryType = "arraybuffer";
   ws.onopen = function () {
+    timeConnect = 0;
     console.log("已连接TCP服务器");
   };
   ws.onmessage = async (e) => {
@@ -63,16 +64,23 @@ const webSocketInit = (reconnect, webSocketInit) => {
       }
       if (object[2][1] != 0) {
         // console.log(object, "object");
+        // let a = await handleObjsPoints(object[2], object[4], object[0]);
+        // console.log(a, "aaaaaaaaaaaaa", object[0]);
         let saf = await handleVO(object[2], object[4], object[0]);
+        // console.log(saf, "saf", object[0]);
         bev_buffer = v_uni8.slice(0, object[3].length);
         bev_buffer.set(object[3]);
+        // console.log(saf, "saf");
         postMessage({
           bp: object[5],
-          objs: saf.bev_objs,
           bev: bev_buffer,
+          objs: object[4],
+          // objs: saf.bev_objs,
+          // v: a,
           v_objs: saf.v_objs,
           key: object[0],
           sign: "bev",
+          basic: object[2]
         });
       }
       // console.log(object, "eee");
@@ -84,17 +92,11 @@ const webSocketInit = (reconnect, webSocketInit) => {
   };
 };
 const reconnect = (reconnect, webSocketInit) => {
-  if (limitConnect > 0) {
-    limitConnect--;
     timeConnect++;
     console.log("第" + timeConnect + "次重连");
-
     setTimeout(function () {
       webSocketInit(reconnect, webSocketInit);
-    }, 2000);
-  } else {
-    console.log("TCP连接已超时");
-  }
+    }, 1000);
 };
 // 计算点坐标数据
 let view_i = {
@@ -183,7 +185,7 @@ let view_i = {
   obj_buffer,
   o_buffer,
   objs_buffer = [],
-  os_buffer = [],
+  ovs_buffer = [],
   arr,
   points_eight,
   empty_arr,
@@ -193,15 +195,21 @@ async function handleVO(base, objs, key) {
   try {
     return new Promise(async (resolve, reject) => {
       objs_buffer = [];
-      os_buffer = [];
+      ovs_buffer = [];
       for (j = 0; j < objs.length; j++) {
-        // console.log(objs[j][12], "lllllllll");
-        empty = [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+        // console.log(objs[j][9], "lllllllll", objs);
+        empty = [
+          [-1, -1],
+          [-1, -1],
+          [-1, -1],
+          [-1, -1],
+          [-1, -1],
+          [-1, -1],
+          [-1, -1],
+          [-1, -1]
+        ];
         arr = [];
-        points_eight = await GetBoundingBoxPoints(
-          ...objs[j].slice(0, 6),
-          objs[j][9]
-        );
+        points_eight = await GetBoundingBoxPoints(...objs[j].slice(0, 6), objs[j][9]);
         view_sign = {
           foresight: 0,
           right_front: 0,
@@ -218,6 +226,7 @@ async function handleVO(base, objs, key) {
           left_back: [],
           right_back: [],
         };
+        // obj_buffer = [];
         obj_buffer = v_uni8.slice(0, 99);
         o_buffer = v_uni8.slice(0, objs[j].length);
         o_buffer.set(objs[j]);
@@ -237,38 +246,31 @@ async function handleVO(base, objs, key) {
         v_arr.filter((ele) => {
           if (view_sign[ele.sign] === 8) {
             // arr.push(...empty);
-            view_a[ele.sign].push(...[
-              [-1, -1],
-              [-1, -1],
-              [-1, -1],
-              [-1, -1],
-              [-1, -1],
-              [-1, -1],
-              [-1, -1],
-              [-1, -1],
-            ]);
+            view_a[ele.sign].push(...empty);
           } else {
             points_eight.filter((item, index) => {
-              view_a[ele.sign].push(project_lidar2img(
+              let a = project_lidar2img(
                 item,
                 base[3][ele.v_index],
                 base[4][ele.v_index],
                 base[5],
                 base[6][ele.v_index],
                 base[8][ele.v_index]
-              ));
+              );
+              view_a[ele.sign].push(a);
             });
           }
           arr.push(...view_a[ele.sign].flat());
         });
+        // console.log(arr, "arr");
         obj_buffer.set(arr, 3);
         obj_buffer.set([objs[j][7]], 0);
         obj_buffer.set([objs[j][8]], 1);
         obj_buffer.set([objs[j][12]], 2);
         objs_buffer.push(obj_buffer);
-        os_buffer.push(o_buffer);
+        ovs_buffer.push(o_buffer);
       }
-      resolve({v_objs: objs_buffer, bev_objs: os_buffer});
+      resolve({v_objs: objs_buffer, bev_objs: ovs_buffer});
     });
   } catch (err) {
     console.log(err, "err---handleVO");
@@ -282,7 +284,6 @@ async function handleObjsPoints(base, objs) {
       D[view_i[i]] = base[8][i];
       crop[view_i[i]] = base[6][i];
     }
-    // console.log(objs, "objs");
     for (j = 0; j < objs.length; j++) {
       let data = {
         points_eight: [],
@@ -435,6 +436,7 @@ let cos_a,
   pt6,
   pt7;
 function GetBoundingBoxPoints(x, y, z, w, l, h, r_z) {
+  // console.log(x, y, z, w, l, h, r_z, "x, y, z, w, l, h, r_z");
   return new Promise(async (resolve, reject) => {
     cos_a = Math.cos(r_z - Math.PI / 2);
     sin_a = Math.sin(r_z - Math.PI / 2);

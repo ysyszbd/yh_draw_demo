@@ -21,14 +21,14 @@
     #126db3,
     rgba(11, 54, 76, 0.98)
   );
-  padding-top: 300px;
+  padding-top: 100px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   // justify-content: center;
   .logo {
-    width: 300px;
+    width: 200px;
     margin-bottom: 60px;
   }
   .text {

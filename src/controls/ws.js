@@ -10,30 +10,31 @@ export default class Ws {
     
     if (isBin) {
       ws.binaryType = 'arraybuffer';
-      console.log(ws.bufferedAmount);
+      // console.log(ws.bufferedAmount);
     }
     ws.onopen = function () {
+      this.timeConnect = 0;
       console.log("已连接TCP服务器");
     };
     ws.onmessage = fn;
     ws.onclose = () => {
       console.log('服务器已经断开');
-      reconnect(url, isBin, fn, reconnect, webSocketInit);
+      this.reconnect(url, isBin, fn, reconnect, webSocketInit);
     };
   }
 
   reconnect = (url, isBin, fn, reconnect, webSocketInit) => {
-    if (this.limitConnect > 0) {
-      this.limitConnect--;
+    // if (this.limitConnect > 0) {
+      // this.limitConnect--;
       this.timeConnect++;
       console.log("第" + this.timeConnect + "次重连");
 
       setTimeout(function () {
-        webSocketInit(url, isBin, fn, reconnect, webSocketInit);
-      }, 2000);
+        this.webSocketInit(url, isBin, fn, reconnect, webSocketInit);
+      }, 1000);
 
-    } else {
-      console.log("TCP连接已超时");
-    }
+    // } else {
+    //   console.log("TCP连接已超时");
+    // }
   }
 }
