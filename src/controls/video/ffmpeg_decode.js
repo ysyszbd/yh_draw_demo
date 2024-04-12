@@ -1,5 +1,176 @@
+
+importScripts("/src/controls/opencv.js");
+let a;
+let mapx;
+let mapy;
+let dst;
+let src;
+let cameralatrix = {};
+let distCoefis = {};
+let ext_lidar2cam = {
+  foresight: [
+    954.0700073242188 / 2,
+    0,
+    966.5700073242188 / 2,
+    0,
+    954.0700073242188 / 2,
+    536.8800048828125 / 2,
+    0,
+    0,
+    1
+  ],
+  rearview: [
+    1962.0999755859375 / 2,
+    0,
+    962.7899780273438 / 2,
+    0,
+    1962.0999755859375 / 2,
+    647.3599853515625 / 2 - 160,
+    0,
+    0,
+    1
+  ],
+  right_front: [
+    1149.199951171875 / 2,
+    0,
+    962.0599975585938 / 2,
+    0,
+    1149.199951171875 / 2,
+    647.2000122070312 / 2 - 160,
+    0,
+    0,
+    1
+  ],
+  right_back: [
+    1153.199951171875 / 2,
+    0,
+    959.5599975585938 / 2,
+    0,
+    1153.199951171875 / 2,
+    642.47998046875 / 2 - 160,
+    0,
+    0,
+    1
+  ],
+  left_back: [
+    1153.4000244140625 / 2,
+    0,
+    960.1500244140625 / 2,
+    0,
+    1153.4000244140625 / 2,
+    633.02001953125 / 2 - 160,
+    0,
+    0,
+    1
+  ],
+  left_front: [
+    1149.199951171875 / 2,
+    0,
+    962.0599975585938 / 2,
+    0,
+    1149.199951171875 / 2,
+    647.2000122070312 / 2 - 160,
+    0,
+    0,
+    1
+  ],
+};
+let dist = {
+  foresight: [
+    0.544471025466919,
+    0.030316999182105064,
+    -0.000028000000384054147,
+    -0.000004999999873689376,
+    -0.00039599998854100704,
+    0.9054499864578247,
+    0.14028699696063995,
+    0
+  ],
+  right_front: [
+    0.5199699997901917,
+    -0.289682000875473,
+    0.00011700000322889537,
+    -0.000012000000424450263,
+    -0.03207400068640709,
+    0.8908799886703491,
+    -0.19602300226688385,
+    -0.129271000623703
+  ],
+  left_front: [
+    0.5199699997901917,
+    -0.289682000875473,
+    0.00011700000322889537,
+    -0.000012000000424450263,
+    -0.03207400068640709,
+    0.8908799886703491,
+    -0.19602300226688385,
+    -0.129271000623703
+  ],
+  rearview: [
+    -0.5068050026893616,
+    0.27776700258255005,
+    -0.0007910000276751816,
+    -0.0001630000042496249,
+    -0.10025200247764587,
+    0,
+    0,
+    0
+  ],
+  left_back: [
+    0.6038810014724731,
+    -0.1506589949131012,
+    -0.000056000000768108293,
+    -0.00013299999409355223,
+    -0.01913899928331375,
+    0.9744619727134705,
+    -0.024149000644683838,
+    -0.07658100128173828
+  ],
+  right_back: [
+    3.760683059692383,
+    1.5822479724884033,
+    0.00021800000104121864,
+    -0.00011700000322889537,
+    0.05919500067830086,
+    4.135602951049805,
+    2.8630518913269043,
+    0.8628029823303223
+  ],
+}
+let v_canvas = new OffscreenCanvas(960, 480),
+  v_context = v_canvas.getContext("2d"),
+  imgData;
+let cv_status = false;
 var Module = typeof Module != "undefined" ? Module : {};
 Module = {};
+cv['onRuntimeInitialized'] = () => {
+  mapx = new cv.Mat();
+  mapy = new cv.Mat();
+  dst = new cv.Mat();
+  cameralatrix["foresight"] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam["foresight"])
+  cameralatrix["right_front"] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam["right_front"])
+  cameralatrix["left_front"] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam["left_front"])
+  cameralatrix["rearview"] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam["rearview"])
+  cameralatrix["left_back"] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam["left_back"])
+  cameralatrix["right_back"] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam["right_back"])
+
+  distCoefis["foresight"] = cv.matFromArray(1, 8, cv.CV_64F, dist["foresight"]);
+  distCoefis["right_front"] = cv.matFromArray(1, 8, cv.CV_64F, dist["right_front"]);
+  distCoefis["left_front"] = cv.matFromArray(1, 8, cv.CV_64F, dist["left_front"]);
+  distCoefis["rearview"] = cv.matFromArray(1, 8, cv.CV_64F, dist["rearview"]);
+  distCoefis["left_back"] = cv.matFromArray(1, 8, cv.CV_64F, dist["left_back"]);
+  distCoefis["right_back"] = cv.matFromArray(1, 8, cv.CV_64F, dist["right_back"]);
+  initCV("foresight");
+  initCV("right_front");
+  initCV("left_front");
+  initCV("rearview");
+  initCV("left_back");
+  initCV("right_back");
+  // console.log("kkkkkkkkkk");
+  cv_status = true;
+  // 在这里执行OpenCV相关的操作
+  // ...
+};
 Module.onRuntimeInitialized = function () {
   postMessage({
     type: "message",
@@ -7,6 +178,7 @@ Module.onRuntimeInitialized = function () {
   });
 };
 
+let status = false;
 let dataArray;
 let codecId = 0;
 let imageBitmap;
@@ -44,7 +216,8 @@ async function decodeArray(u8Array, key, view) {
       height: Module._getHeight(),
       rgb: rgbData,
     };
-    imageBitmap = await drawVideoBg(rgbObj, key);
+    
+    imageBitmap = await drawVideoBg(rgbObj, key, view);
     // if (view === "foresight") {
     //   console.log(Date.now(), "2222", key);
     // }
@@ -65,7 +238,9 @@ onmessage = function (e) {
     codecId = e.data.info;
     Module._close();
     Module._init(codecId);
+    status = true;
   } else {
+    if (!status || !cv_status) return;
     if (codecId != 173) {
       Module._close();
       Module._init(codecId);
@@ -77,11 +252,9 @@ onmessage = function (e) {
     decodeArray(e.data.video_data, e.data.key, e.data.view);
   }
 };
-let v_canvas = new OffscreenCanvas(960, 480),
-  v_context = v_canvas.getContext("2d"),
-  imgData;
+
 // 渲染视频
-function drawVideoBg(info, key) {
+function drawVideoBg(info, key, view) {
   return new Promise((resolve, reject) => {
     imgData = new ImageData(info.rgb, info.width, info.height);
     for (let i = 0; i < imgData.data.length; i += 4) {
@@ -89,15 +262,50 @@ function drawVideoBg(info, key) {
       imgData.data[i + 0] = imgData.data[i + 2];
       imgData.data[i + 2] = data0;
     }
-    v_context.putImageData(imgData, 0, 0);
-    // v_context.fillStyle = "white";
-    // v_context.fillRect(10, 0, 180, 30);
-    // v_context.font = "28px serif";
-    // v_context.fillStyle = "red";
-    // v_context.fillText(key, 10, 20);
+    src = imageDataToMat(imgData);
+    cv.remap(src, dst, mapx, mapy, cv.INTER_LINEAR);
+    // src = cv.matFromImageData(imgData);
+    // // // 进行畸变校正
+    // cv.undistort(src, dst, cameralatrix[view], distCoefis[view]);
+    // let dstImgData = new ImageData(new Uint8ClampedArray(dst.data), dst.cols, dst.rows);
+
+    // cv.remap(src, dst, mapx, mapy, cv.INTER_LINEAR);
+    // cv.imshow(imageBitmap, dst);
+
+    v_context.putImageData(matToImageData(dst), 0, 0);
+    // v_context.putImageData(dstImgData, 0, 0);
+    v_context.fillStyle = "white";
+    v_context.fillRect(10, 0, 180, 30);
+    v_context.font = "28px serif";
+    v_context.fillStyle = "red";
+    v_context.fillText(key, 10, 20);
+    
     resolve(v_canvas.transferToImageBitmap());
   });
 }
+function imageDataToMat(imageData) {
+  let mat = new cv.Mat(imageData.height, imageData.width, cv.CV_8UC4);
+  mat.data.set(imageData.data);
+  return mat;
+} 
+function matToImageData(mat) {
+  // cv.Mat类型为CV_8UC4时，直接使用mat.data
+  return new ImageData(new Uint8ClampedArray(mat.data), mat.cols, mat.rows);
+}
+
+function initCV(view) {
+  cv.initUndistortRectifyMap(
+    cameralatrix[view], 
+    distCoefis[view], 
+    new cv.Mat(), 
+    cameralatrix[view], 
+    { width: 960, height: 480 }, 
+    cv.CV_32FC1, 
+    mapx,
+    mapy
+  );
+}
+
 
 // ------------------解码
 // Sometimes an existing Module object exists with properties

@@ -32,12 +32,6 @@ let video_start = ref(false);
 let video_work = new Worker(
   new URL("../../controls/video/ffmpeg_decode.js", import.meta.url).href
 );
-// let draw_work = new Worker(
-//   new URL("../../controls/video/draw_worker.js", import.meta.url).href, 
-//   {
-//     type: "module"
-//   }
-// );
 let key = ref(null);
 let bg = ref(null);
 const MemoryPool = inject("MemoryPool");
@@ -49,15 +43,6 @@ onMounted(() => {
 function drawVideo(data) {
   return new Promise((resolve, reject) => {
     yh_video.value.drawVideo(data);
-    // key.value = data.key;
-    // bg.value = data.bg;
-    // draw_work.postMessage({
-    //   objs: data.v_o,
-    //   key: data.key,
-    //   view: props.video_id,
-    //   sign: "v_draw"
-    // })
-    // console.log(MemoryPool, "MemoryPool");
     resolve(`渲染${props.video_id}完毕`);
   });
 }
@@ -93,6 +78,9 @@ function initVideoWork() {
 function clearVideo() {
   yh_video.value.clear();
   yh_video.value = null;
+  video_work.postMessage({
+    
+  })
   video_work.terminate();
   video_work = null;
 }

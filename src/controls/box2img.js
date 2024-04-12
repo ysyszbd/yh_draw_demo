@@ -2,14 +2,6 @@
  * @LastEditTime: 2024-04-08 11:59:49
  * @Description:
  */
-// import { K, D, ext_lidar2cam } from "../assets/demo_data/data";
-// import { create, all } from "mathjs";
-// // 创建mathjs实例
-// const mathjs = create(all, {
-//   number: "BigNumber",
-//   precision: 20,
-// });
-// export const math = create(all, mathjs);
 
 export function construct2DArray(original, m, n) {
   return original.length === m * n
@@ -38,6 +30,7 @@ let pt_cam_x,
   x_d,
   y_d;
 export function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
+  // console.log(scale, crop, "scale, crop");
   pt_cam_x =
     pts[0] * ext_lidar2cam[0] +
     pts[1] * ext_lidar2cam[1] +
@@ -55,11 +48,8 @@ export function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
     ext_lidar2cam[11];
   // x_u = pt_cam_x / pt_cam_z;
   // y_u = pt_cam_y / pt_cam_z;
-  // console.log(pt_cam_x, pt_cam_y, pt_cam_z)
   x_u = pt_cam_x / Math.abs(pt_cam_z);
   y_u = pt_cam_y / Math.abs(pt_cam_z);
-  // console.log(x_u, y_u)
-  // console.log(D)
 
   // r2 = x_u * x_u + y_u * y_u;
   // r4 = r2 * r2;
@@ -72,16 +62,9 @@ export function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
 
   // x_d = x_u * cdist * icdist2 + D[2] * a1 + D[3] * a2;
   // y_d = y_u * cdist * icdist2 + D[2] * a3 + D[3] * a1;
-  // console.log(x_d, y_d)
 
   x_scale = scale[0] * (K[0] * x_u + K[2]);
   y_scale = scale[1] * (K[4] * y_u + K[5]);
-  // console.log(K)
-
-  // console.log(crop, "crop");
-  // crop = [0, -80]
-  // if (crop[1] == -160) crop[1] = -80;
-  // crop[1] == -160;
 
   x_crop = x_scale + crop[0];
   y_crop = y_scale + crop[1];
@@ -142,20 +125,17 @@ export function GetBoundingBoxPoints(x, y, z, w, l, h, r_z) {
       sin_a * half_w + cos_a * half_l + y,
       z + half_h,
     ];
-    // const pt8 = [x, y, z];
-    // resolve([pt8, pt8, pt8, pt8, pt8, pt8, pt8, pt8]);
-
     resolve([pt0, pt1, pt2, pt3, pt4, pt5, pt6, pt7]);
   });
 }
 // 计算点坐标数据
 let view_i = {
     0: "foresight",
-    3: "rearview",
     1: "right_front",
-    5: "right_back",
-    4: "left_back",
     2: "left_front",
+    3: "rearview",
+    4: "left_back",
+    5: "right_back",
   },
   K = {},
   D = {},
@@ -196,7 +176,6 @@ export async function handleObjsPoints(base, objs) {
         D[view_i[i]] = base[8][i];
         crop[view_i[i]] = base[6][i];
       }
-      // console.log(objs, "objs");
       for (j = 0; j < objs.length; j++) {
         let data = {
           points_eight: [],
@@ -262,6 +241,7 @@ export async function handleObjsPoints(base, objs) {
 let scale = 51.2 / 30;
 // 计算障碍物信息
 export function handleObjs(objs_data) {
+  // console.log(objs_data, "objs_data");
   return new Promise((resolve, reject) => {
     let obj_index = {
       "0-0": {
@@ -281,22 +261,17 @@ export function handleObjs(objs_data) {
     objs_data.filter((item) => {
       let type = `${item[7]}-${item[8]}`;
       if (obj_index[type]) {
+        // console.log(item, "item");
         if (
-          Math.abs(item[0] * scale) <= 51.2 &&
-          Math.abs(item[1] * scale) <= 51.2
+          Math.abs(item[0]) <= 30 &&
+          Math.abs(item[1]) <= 30
         ) {
-          //   //   // obj_index[type].data.push(item);
-          // item[0] = item[0];
-          // item[1] = item[1];
-          // item[0] = item[0] * scale;
-          // item[1] = item[1] * scale;
           item[2] = 0;
-          // item[9] += 0.5;
-          // item[2] += 1.9
           obj_index[type].data.push(item);
         }
       }
     });
+    // console.log(obj_index, "obj_index");
     resolve(obj_index);
   });
 }
@@ -313,4 +288,173 @@ export function formaData(timer) {
 }
 export function pad(timeEl, total = 2, str = "0") {
   return timeEl.toString().padStart(total, str);
+}
+export function isLineStraight(points) {
+  if (points.length < 3) {
+    // 至少需要3个点来判断线条是否弯曲
+    return true;
+  }
+
+  const getSlope = (p1, p2) => (p2[1] - p1[1]) / (p2.x - p1.x);
+  const firstSlope = getSlope(points[0], points[1]);
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const slope = getSlope(points[i], points[i + 1]);
+    if (Math.abs(slope - firstSlope) > 1e-6) {
+      // 斜率变化超过了允许的误差范围，线条可能是曲线
+      return false;
+    }
+  }
+
+  // 所有斜率近似相等，线条更像直线
+  return true;
+}
+let mapx = new cv.Mat();
+let mapy = new cv.Mat();
+let dst = new cv.Mat();
+let cameralatrix = {
+  foresight: [
+    954.0700073242188,
+    0,
+    966.5700073242188,
+    0,
+    954.0700073242188,
+    536.8800048828125,
+    0,
+    0,
+    1
+  ],
+  rearview: [
+    1962.0999755859375,
+    0,
+    962.7899780273438,
+    0,
+    1962.0999755859375,
+    647.3599853515625,
+    0,
+    0,
+    1
+  ],
+  right_front: [
+    1149.199951171875,
+    0,
+    962.0599975585938,
+    0,
+    1149.199951171875,
+    647.2000122070312,
+    0,
+    0,
+    1
+  ],
+  right_back: [
+    1153.199951171875,
+    0,
+    959.5599975585938,
+    0,
+    1153.199951171875,
+    642.47998046875,
+    0,
+    0,
+    1
+  ],
+  left_back: [
+    1153.4000244140625,
+    0,
+    960.1500244140625,
+    0,
+    1153.4000244140625,
+    633.02001953125,
+    0,
+    0,
+    1
+  ],
+  left_front: [
+    1149.199951171875,
+    0,
+    962.0599975585938,
+    0,
+    1149.199951171875,
+    647.2000122070312,
+    0,
+    0,
+    1
+  ],
+};
+let distCoefis = {
+  foresight: [
+    0.544471025466919,
+    0.030316999182105064,
+    -0.000028000000384054147,
+    -0.000004999999873689376,
+    -0.00039599998854100704,
+    0.9054499864578247,
+    0.14028699696063995,
+    0
+  ],
+  right_front: [
+    0.5199699997901917,
+    -0.289682000875473,
+    0.00011700000322889537,
+    -0.000012000000424450263,
+    -0.03207400068640709,
+    0.8908799886703491,
+    -0.19602300226688385,
+    -0.129271000623703
+  ],
+  left_front: [
+    0.5199699997901917,
+    -0.289682000875473,
+    0.00011700000322889537,
+    -0.000012000000424450263,
+    -0.03207400068640709,
+    0.8908799886703491,
+    -0.19602300226688385,
+    -0.129271000623703
+  ],
+  rearview: [
+    -0.5068050026893616,
+    0.27776700258255005,
+    -0.0007910000276751816,
+    -0.0001630000042496249,
+    -0.10025200247764587,
+    0,
+    0,
+    0
+  ],
+  left_back: [
+    0.6038810014724731,
+    -0.1506589949131012,
+    -0.000056000000768108293,
+    -0.00013299999409355223,
+    -0.01913899928331375,
+    0.9744619727134705,
+    -0.024149000644683838,
+    -0.07658100128173828
+  ],
+  right_back: [
+    3.760683059692383,
+    1.5822479724884033,
+    0.00021800000104121864,
+    -0.00011700000322889537,
+    0.05919500067830086,
+    4.135602951049805,
+    2.8630518913269043,
+    0.8628029823303223
+  ],
+}
+export function initCV(view) {
+  cv.initUndistortRectifyiap(
+    cameralatrix[view], 
+    distCoefis[view], 
+    new cv.Mat(), 
+    cameralatrix[view], 
+    gray.size(), 
+    cv.CV_32FC1, 
+    mapx,
+    mapy
+  );
+}
+
+export function imgCV() {
+  cv.remap(img, dst, mapx, mapy, cv.INTER_LINEAR);
 }

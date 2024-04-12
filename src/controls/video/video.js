@@ -91,12 +91,12 @@ export default class Video {
       this.objs_img.close();
       this.objs_img = null;
     }
-    if (data.objs) {
-      let a = await this.drawVideoObjs0(data.objs, this.id, data.key);
-      this.helper_ctx.drawImage(a, 0, 0, w, h);
-      a.close();
-      a = null;
-    }
+    // if (data.objs) {
+    //   let a = await this.drawVideoObjs0(data.objs, this.id, data.key);
+    //   this.helper_ctx.drawImage(a, 0, 0, w, h);
+    //   a.close();
+    //   a = null;
+    // }
   }
   // 各view渲染障碍物
   drawVideoObjs(objs, view, key) {
@@ -127,11 +127,11 @@ export default class Video {
         this.v_objs_cxt.fillText(this.obj_data[2], x, y);
         this.drawBox(box);
       });
-      // this.v_objs_cxt.fillStyle = "white";
-      // this.v_objs_cxt.fillRect(10, 20, 180, 30);
-      // this.v_objs_cxt.font = "28px serif";
-      // this.v_objs_cxt.fillStyle = "green";
-      // this.v_objs_cxt.fillText(key, 10, 44);
+      this.v_objs_cxt.fillStyle = "white";
+      this.v_objs_cxt.fillRect(10, 20, 180, 30);
+      this.v_objs_cxt.font = "28px serif";
+      this.v_objs_cxt.fillStyle = "green";
+      this.v_objs_cxt.fillText(key, 10, 44);
       resolve(this.v_objs_canvas.transferToImageBitmap());
     });
   }

@@ -47,6 +47,8 @@ export default class bevImgContorl {
     geometry: null,
     group: new THREE.Group(),
   };
+  dom_width = 0;
+  dom_height = 0;
   road = null;
   objs = {
     start: false,
@@ -54,42 +56,52 @@ export default class bevImgContorl {
     car: null,
     car_group: new THREE.Object3D(),
     car_tags: new THREE.Object3D(),
+    car_rot: Math.PI / 2,
     car_whl: {},
     truck: null,
     truck_group: new THREE.Object3D(),
     truck_tags: new THREE.Object3D(),
+    truck_rot: Math.PI,
     truck_whl: {},
     construction_vehicle: null,
     construction_vehicle_group: new THREE.Object3D(),
     construction_vehicle_tags: new THREE.Object3D(),
+    construction_vehicle_rot: Math.PI,
     construction_vehicle_whl: {},
     bus: null,
     bus_group: new THREE.Object3D(),
     bus_tags: new THREE.Object3D(),
+    bus_rot: Math.PI,
     bus_whl: {},
     trailer: null,
     trailer_group: new THREE.Object3D(),
     trailer_tags: new THREE.Object3D(),
+    trailer_rot: Math.PI,
     trailer_whl: {},
     barrier: null,
     barrier_group: new THREE.Object3D(),
     barrier_tags: new THREE.Object3D(),
+    barrier_rot: 0,
     barrier_whl: {},
     motorcycle: null,
     motorcycle_group: new THREE.Object3D(),
     motorcycle_tags: new THREE.Object3D(),
+    motorcycle_rot: 0,
     motorcycle_whl: {},
     bicycle: null,
     bicycle_group: new THREE.Object3D(),
     bicycle_tags: new THREE.Object3D(),
+    bicycle_rot: Math.PI / 2,
     bicycle_whl: {},
     pedestrian: null,
     pedestrian_group: new THREE.Object3D(),
     pedestrian_tags: new THREE.Object3D(),
+    pedestrian_rot: Math.PI / 2 + Math.PI / 3,
     pedestrian_whl: {},
     street_cone: null,
     street_cone_group: new THREE.Object3D(),
     street_cone_tags: new THREE.Object3D(),
+    street_cone_rot: Math.PI / 2,
     street_cone_whl: {},
     tags_group: new THREE.Object3D(),
   };
@@ -153,17 +165,21 @@ export default class bevImgContorl {
       if (!data.bevs_point) return;
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
-        // this.bev_imgData = await this.drawBev(data.bev);
-        // this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
-        // this.bev_imgData.close();
-        // this.bev_imgData = null;
-        // this.mapBg.needsUpdate = true;
+        if(data.bev) {
+          this.bev_imgData = await this.drawBev(data.bev);
+          console.log(this.bev_imgData, "this.bev_imgData");
+          this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
+          this.bev_imgData.close();
+          this.bev_imgData = null;
+          this.mapBg.needsUpdate = true;
+        }
         if (data.bevs_point) {
           // console.log(data.bevs_point, "data.bevs_point");
           this.handleLine(data.bevs_point);
           // this.setPoints(data.bevs_point);
         }
         if (data.objs) {
+          // console.log();
           await this.handleObjs(await handleObjs(data.objs));
         }
         resolve("ppp");
@@ -230,7 +246,7 @@ export default class bevImgContorl {
   setWidthLine(pointsArr, color = "rgb(80,190,225)") {
     try {
       // 处理坐标数据
-      let points = this.handlePoints(pointsArr);
+      let points = this.handlePoints(pointsArr, "line");
       const geometry = this.track(
         new LineGeometry({
           linewidth: 20,
@@ -245,7 +261,12 @@ export default class bevImgContorl {
           vertexColors: false,
         })
       );
-      matLine.resolution.set(window.innerWidth, window.innerHeight);
+      matLine.polygonOffset = true;
+      matLine.polygonOffsetFactor = 1;
+      matLine.polygonOffsetUnits = 1;
+
+      matLine.resolution.set(this.dom_width, this.dom_height);
+      // matLine.resolution.set(window.innerWidth, window.innerHeight);
       let line = this.track(new Line2(geometry, matLine));
       line.computeLineDistances();
       return line;
@@ -273,7 +294,7 @@ export default class bevImgContorl {
     }
     bevs_point.forEach((item) => {
       let p_g = this.pointsGeometry.clone();
-      let points_arr = this.handlePoints(item[1]);
+      let points_arr = this.handlePoints(item[1], "line");
       p_g.setAttribute('position', new THREE.Float32BufferAttribute(points_arr, 3));
       let p_m = this.pointsMaterial.clone();
       const clonedPoints = new THREE.Points(p_g, p_m);
@@ -283,18 +304,29 @@ export default class bevImgContorl {
     })
   }
   // 处理带宽度的线条坐标数据
-  handlePoints(pointsArr) {
+  handlePoints(pointsArr, sign = "bev") {
     // 处理坐标数据
-    const points = [];
-    pointsArr.forEach((item, index) => {
-      if (index === 0 || index === pointsArr.length - 1 || index % 10 == 0) {
-        points.push(-item[1], item[0], 0);
+    if (sign === "line") {
+      const points = new Float32Array(200 * 3);
+      for(let i = 0; i < points.length; i+=3) {
+        let data0 = pointsArr[i * 5];
+        if (data0) {
+          points[i+0] = -data0[1];
+          points[i+1] = data0[0];
+          points[i+2] = 0;
+        }else {
+          points[i+0] = -pointsArr[pointsArr.length - 1][1];
+          points[i+1] = pointsArr[pointsArr.length - 1][0];
+          points[i+2] = 0;
+        }
       }
-    });
-    return points;
+      return points;
+    }
+    
   }
   // 更新障碍物
   async handleObjs(objs_data) {
+    // console.log(objs_data, "objs_data");
     return new Promise((resolve, reject) => {
       for (let item in objs_data) {
         this.handle3D(objs_data[item].name, objs_data[item].data);
@@ -303,16 +335,6 @@ export default class bevImgContorl {
     });
   }
   async handleLine(bevs_point) {
-    if (this.lines.group.children.length !== 0) {
-      this.lines.group.children.forEach((item) => {
-        this.scene.remove(item);
-        item.geometry.dispose();
-        item.material.dispose();
-      });
-      this.scene.remove(this.lines.group);
-      this.lines.group.clear();
-    }
-
     if (this.lines.group.children.length <= 0) {
       bevs_point.forEach((item) => {
         let line = this.setWidthLine(item[1], this.lineColors[item[0]]);
@@ -320,63 +342,63 @@ export default class bevImgContorl {
       });
       this.scene.add(this.lines.group);
     } 
-    // else {
+    else {
 
-      // if (this.lines.group.children.length > 50) {
-      //   console.log("大于50---lines");
-      //   for (let j = 50; j < this.lines.group.children.length; j++) {
-      //     this.scene.remove(this.lines.group.children[j]);
-      //     this.lines.group.children[j].geometry.dispose();
-      //     this.lines.group.children[j].material.dispose();
-      //     this.lines.group.remove(this.lines.group.children[j]);
-      //   }
-      // }
+      if (this.lines.group.children.length > 50) {
+        console.log("大于50---lines");
+        for (let j = 50; j < this.lines.group.children.length; j++) {
+          this.scene.remove(this.lines.group.children[j]);
+          this.lines.group.children[j].geometry.dispose();
+          this.lines.group.children[j].material.dispose();
+          this.lines.group.remove(this.lines.group.children[j]);
+        }
+      }
 
-      // if (this.lines.group.children.length >= bevs_point.length) {
-      //   console.log("llllll");
-      //   for (let i = 0; i < bevs_point.length; i++) {
-      //     let points = this.handlePoints(bevs_point[i][1]);
-      //     this.lines.group.children[i].geometry.setPositions(points);
-      //     this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
-      //     this.lines.group.children[i].material.color.set(
-      //       this.lineColors[bevs_point[i][0]]
-      //     );
-      //     this.lines.group.children[i].material.needsUpdate = true;
-      //   }
-      //   for (
-      //     let j = bevs_point.length;
-      //     j < this.lines.group.children.length;
-      //     j++
-      //   ) {
-      //     this.lines.group.children[j].geometry.setPositions([
-      //       100, 100, 0, 100, 100, 0,
-      //     ]);
-      //     this.lines.group.children[j].geometry.attributes.position.needsUpdate = true;
-      //   }
-      // } else {
-      //   for (let i = 0; i < this.lines.group.children.length; i++) {
-      //     let points = this.handlePoints(bevs_point[i][1]);
-      //     this.lines.group.children[i].geometry.setPositions(points);
-      //     this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
-      //     this.lines.group.children[i].material.color.set(
-      //       this.lineColors[bevs_point[i][0]]
-      //     );
-      //     this.lines.group.children[i].material.needsUpdate = true;
-      //   }
-      //   for (
-      //     let j = this.lines.group.children.length;
-      //     j < bevs_point.length;
-      //     j++
-      //   ) {
-      //     let line = this.setWidthLine(
-      //       bevs_point[j][1],
-      //       this.lineColors[bevs_point[j][0]]
-      //     );
-      //     this.lines.group.add(line);
-      //   }
-      //   this.scene.add(this.lines.group);
-      // }
-    // }
+      if (this.lines.group.children.length >= bevs_point.length) {
+        // console.log("llllll");
+        for (let i = 0; i < bevs_point.length; i++) {
+          let points = this.handlePoints(bevs_point[i][1], "line");
+          this.lines.group.children[i].geometry.setPositions(points);
+          this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
+          this.lines.group.children[i].material.color.set(
+            this.lineColors[bevs_point[i][0]]
+          );
+          this.lines.group.children[i].material.needsUpdate = true;
+        }
+        for (
+          let j = bevs_point.length;
+          j < this.lines.group.children.length;
+          j++
+        ) {
+          this.lines.group.children[j].geometry.setPositions([
+            100, 100, 0, 100, 100, 0,
+          ]);
+          this.lines.group.children[j].geometry.attributes.position.needsUpdate = true;
+        }
+      } else {
+        for (let i = 0; i < this.lines.group.children.length; i++) {
+          let points = this.handlePoints(bevs_point[i][1], "line");
+          this.lines.group.children[i].geometry.setPositions(points);
+          this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
+          this.lines.group.children[i].material.color.set(
+            this.lineColors[bevs_point[i][0]]
+          );
+          this.lines.group.children[i].material.needsUpdate = true;
+        }
+        for (
+          let j = this.lines.group.children.length;
+          j < bevs_point.length;
+          j++
+        ) {
+          let line = this.setWidthLine(
+            bevs_point[j][1],
+            this.lineColors[bevs_point[j][0]]
+          );
+          this.lines.group.add(line);
+        }
+        this.scene.add(this.lines.group);
+      }
+    }
     
   }
   // 操作具体的障碍物
@@ -414,7 +436,7 @@ export default class bevImgContorl {
             let c_model = model.scene.clone();
             c_model.matrixAutoUpdate = true;
             c_model.position.set(-point[1], point[0], 0);
-            c_model.rotation.y = point[9] + Math.PI / 2;
+            c_model.rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(point[9])) + this.objs[`${type}_rot`];
             group.add(c_model);
             let label3DSprite = this.tag3DSprite(point[12]);
             let pos3 = new THREE.Vector3();
@@ -433,7 +455,7 @@ export default class bevImgContorl {
         if (group.children.length >= data.length) {
           for (let i = 0; i < data.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = data[i][9] + Math.PI / 2;
+            group.children[i].rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(data[i][9])) + this.objs[`${type}_rot`];
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
             pos3.z = data[i][5] + 1;
@@ -459,8 +481,7 @@ export default class bevImgContorl {
         } else {
           for (let i = 0; i < group.children.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = data[i][9] + Math.PI / 2;
-
+            group.children[i].rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(data[i][9])) + this.objs[`${type}_rot`];
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
             pos3.z = data[i][5] + 1;
@@ -472,7 +493,7 @@ export default class bevImgContorl {
             let l_c_model = model.scene.clone();
             l_c_model.matrixAutoUpdate = true;
             l_c_model.position.set(-data[j][1], data[j][0], 0);
-            l_c_model.rotation.y = data[j][9] + Math.PI / 2;
+            l_c_model.rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(data[j][9])) + this.objs[`${type}_rot`];
             group.add(l_c_model);
             let label3DSprite = this.tag3DSprite(data[j][12]);
             let pos3 = new THREE.Vector3();
@@ -543,8 +564,8 @@ export default class bevImgContorl {
   init() {
     this.scene = new THREE.Scene();
     let rect = this.rgb_data.dom.getBoundingClientRect();
-    var width = (rect.width * document.documentElement.clientWidth) / 1080 - 26;
-    var height =
+    this.dom_width = (rect.width * document.documentElement.clientWidth) / 1080 - 26;
+    this.dom_height =
       (rect.height * document.documentElement.clientWidth) / 1080 - 26;
     this.camera = new THREE.PerspectiveCamera(80, width / height, 1, 10000);
     this.camera.position.set(0, -5, 30);
@@ -557,9 +578,9 @@ export default class bevImgContorl {
       alpha: true,
     });
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(this.dom_width, this.dom_height);
     this.renderer2 = new CSS3DRenderer();
-    this.renderer2.setSize(width, height);
+    this.renderer2.setSize(this.dom_width, this.dom_height);
     this.renderer2.domElement.style.position = "absolute";
     this.renderer2.domElement.style.zIndex = 2;
 
@@ -567,7 +588,7 @@ export default class bevImgContorl {
     this.rgb_data.dom.appendChild(this.renderer2.domElement);
     this.renderer.toneMapping = THREE.ReinhardToneMapping;
     this.renderer.toneMappingExposure = 2.0;
-    // this.setMesh();
+    this.setMesh();
     this.setAmbientLight();
     this.setControls();
     // this.addSky();
@@ -652,7 +673,7 @@ export default class bevImgContorl {
           const box = this.track(new THREE.Box3().setFromObject(gltf)),
           center = box.getCenter(new THREE.Vector3());
           size = box.getSize(new THREE.Vector3());
-          gltf.position.y = -(size.y / 2) - center.y;
+          // gltf.position.y = -(size.y / 2) - center.y;
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
           // gltf.scale.set(2, 2, 2);
@@ -668,23 +689,24 @@ export default class bevImgContorl {
         } else if (item.id === "truck") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
-          gltf.position.y = -105;
-          gltf.position.x = -105;
+          gltf.position.y = -100;
+          gltf.position.x = -100;
           size = this.ge3Dsize(gltf);
           s = 4.8 / size.x;
-          gltf.scale.set(s, s, s);
+          // gltf.scale.set(s, s, s);
         } else if (item.id === "bus") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.position.y = -125;
-          gltf.position.x = -125;
+          gltf.rotation.y = Math.PI;
+          gltf.position.y = -120;
+          gltf.position.x = -120;
           size = this.ge3Dsize(gltf);
           s = 2.5 / size.x;
-          gltf.scale.set(0.7, 0.7, 0.7);
+          // gltf.scale.set(0.7, 0.7, 0.7);
         } else if (item.id === "trailer") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
-          gltf.position.y = -135;
-          gltf.position.x = -135;
+          gltf.position.y = -130;
+          gltf.position.x = -130;
           size = this.ge3Dsize(gltf);
           s = 2.1 / size.x;
           // gltf.scale.set(2,2,2);
@@ -731,13 +753,13 @@ export default class bevImgContorl {
           // gltf.scale.set(2,2,2);
         } else if (item.id === "construction_vehicle") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI / 3 * 2;
-          gltf.position.x = 110;
+          gltf.rotation.y = Math.PI;
+          gltf.position.x = 100;
           gltf.position.y = -100;
           size = this.ge3Dsize(gltf);
           s = 6 / size.x;
           // gltf.scale.set(s, s, s);
-          gltf.scale.set(2,2,2);
+          // gltf.scale.set(2,2,2);
         }
         if (item.id !== "main_car") {
           this.objs[`${item.id}_whl`] = this.ge3Dsize(gltf);
@@ -807,7 +829,7 @@ export default class bevImgContorl {
     // 一格5单位
     let gridHelper = new THREE.GridHelper(
       60,
-      102.4,
+      60,
       "rgb(238, 14, 14)",
       "rgb(158, 156, 153)"
     );

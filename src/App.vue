@@ -27,7 +27,7 @@ onUnmounted(() => {
 <template>
   <div class="main_box">
     <!-- <loading /> -->
-    <loading v-if="!model3D_status || !video_start" class="loading_page"/>
+    <!-- <loading v-if="!model3D_status || !video_start" class="loading_page"/> -->
     <mainPage :videoStart="video_start" class="main_page" />
   </div>
 </template>

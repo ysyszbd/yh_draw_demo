@@ -21,6 +21,7 @@ self.onmessage = async (e) => {
     webSocketInit(reconnect, webSocketInit);
   }
 };
+let mmm = new Map();
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 const webSocketInit = (reconnect, webSocketInit) => {
   ws = new WebSocket("ws://192.168.8.66:1234");
@@ -32,58 +33,58 @@ const webSocketInit = (reconnect, webSocketInit) => {
   ws.onmessage = async (e) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
-      if (object[1].length > 0) {
-        f_buffer = v_uni8.slice(0, object[1][0].length);
-        f_buffer.set(object[1][0]);
-        rf_buffer = v_uni8.slice(0, object[1][1].length);
-        rf_buffer.set(object[1][1]);
-        lf_buffer = v_uni8.slice(0, object[1][2].length);
-        lf_buffer.set(object[1][2]);
-        r_buffer = v_uni8.slice(0, object[1][3].length);
-        r_buffer.set(object[1][3]);
-        lb_buffer = v_uni8.slice(0, object[1][4].length);
-        lb_buffer.set(object[1][4]);
-        rb_buffer = v_uni8.slice(0, object[1][5].length);
-        rb_buffer.set(object[1][5]);
-        postMessage({
-          f_buffer,
-          r_buffer,
-          rf_buffer,
-          rb_buffer,
-          lf_buffer,
-          lb_buffer,
-          key: object[0],
-          sign: "video",
-        });
-        f_buffer = null;
-        r_buffer = null;
-        rf_buffer = null;
-        rb_buffer = null;
-        lf_buffer = null;
-        lb_buffer = null;
-      }
+      // console.log(object, "object");
+      
+      // if (object[1].length > 0) {
+      //   f_buffer = v_uni8.slice(0, object[1][0].length);
+      //   f_buffer.set(object[1][0]);
+      //   rf_buffer = v_uni8.slice(0, object[1][1].length);
+      //   rf_buffer.set(object[1][1]);
+      //   lf_buffer = v_uni8.slice(0, object[1][2].length);
+      //   lf_buffer.set(object[1][2]);
+      //   r_buffer = v_uni8.slice(0, object[1][3].length);
+      //   r_buffer.set(object[1][3]);
+      //   lb_buffer = v_uni8.slice(0, object[1][4].length);
+      //   lb_buffer.set(object[1][4]);
+      //   rb_buffer = v_uni8.slice(0, object[1][5].length);
+      //   rb_buffer.set(object[1][5]);
+      //   postMessage({
+      //     f_buffer,
+      //     r_buffer,
+      //     rf_buffer,
+      //     rb_buffer,
+      //     lf_buffer,
+      //     lb_buffer,
+      //     key: object[0],
+      //     sign: "video",
+      //   });
+      //   f_buffer = null;
+      //   r_buffer = null;
+      //   rf_buffer = null;
+      //   rb_buffer = null;
+      //   lf_buffer = null;
+      //   lb_buffer = null;
+      // }
       if (object[2][1] != 0) {
         // console.log(object, "object");
-        // let a = await handleObjsPoints(object[2], object[4], object[0]);
-        // console.log(a, "aaaaaaaaaaaaa", object[0]);
-        let saf = await handleVO(object[2], object[4], object[0]);
-        // console.log(saf, "saf", object[0]);
-        bev_buffer = v_uni8.slice(0, object[3].length);
-        bev_buffer.set(object[3]);
-        // console.log(saf, "saf");
+        // let saf = await handleVO(object[2], object[4], object[0]);
+        // // console.log(saf, "saf", object[0]);
+        // bev_buffer = v_uni8.slice(0, object[3].length);
+        // bev_buffer.set(object[3]);
+        // postMessage({
+        //   bp: object[5],
+        //   bev: bev_buffer,
+        //   objs: object[4],
+        //   // objs: saf.bev_objs,
+        //   v_objs: saf.v_objs,
+        //   key: object[0],
+        //   sign: "bev",
+        //   basic: object[2]
+        // });
         postMessage({
-          bp: object[5],
-          bev: bev_buffer,
-          objs: object[4],
-          // objs: saf.bev_objs,
-          // v: a,
-          v_objs: saf.v_objs,
-          key: object[0],
-          sign: "bev",
-          basic: object[2]
+          object
         });
       }
-      // console.log(object, "eee");
     }
   };
   ws.onclose = () => {
@@ -91,6 +92,21 @@ const webSocketInit = (reconnect, webSocketInit) => {
     reconnect(reconnect, webSocketInit);
   };
 };
+function download(filename, text) {
+  const element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+
+
 const reconnect = (reconnect, webSocketInit) => {
     timeConnect++;
     console.log("第" + timeConnect + "次重连");
