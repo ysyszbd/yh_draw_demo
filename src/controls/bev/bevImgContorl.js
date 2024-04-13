@@ -577,6 +577,7 @@ export default class bevImgContorl {
       antialias: true,
       alpha: true,
     });
+    
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(this.dom_width, this.dom_height);
     this.renderer2 = new CSS3DRenderer();
