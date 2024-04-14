@@ -77,12 +77,9 @@ function initVideoWork() {
 // 清除视频占用内存
 function clearVideo() {
   yh_video.value.clear();
-  yh_video.value = null;
-  video_work.postMessage({
-    
-  })
+  // yh_video.value = null;
   video_work.terminate();
-  video_work = null;
+  // video_work = null;
 }
 function changeCodecId(val) {
   let data = {

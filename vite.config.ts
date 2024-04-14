@@ -19,6 +19,11 @@ export default defineConfig({
     alias: {
       "@": resolve(__dirname, "src"),
     },
+    fallback: {
+      fs: false,
+      path: false,
+      crypto: false,
+    },
   },
   css: {
     preprocessorOptions: {

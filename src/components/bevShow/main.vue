@@ -86,7 +86,7 @@ import {
   onUnmounted,
   onBeforeMount,
   onMounted,
-  provide 
+  provide,
 } from "vue";
 import { ObserverInstance } from "@/controls/event/observer";
 import Ws from "@/controls/ws.js";
@@ -132,23 +132,28 @@ let foresight = ref(),
   startTime = ref(0),
   timerId = ref(null),
   mmm = ref(new Map());
-  provide("MemoryPool", MemoryPool);
+provide("MemoryPool", MemoryPool);
 const videoInit = inject("videoInit");
 // console.log(cv.initUndistortRectifyMap(), "-------------");
 videoWorker.postMessage({ sign: "init" });
 // 视频worker
 videoWorker.onmessage = async (e) => {
-  // console.log(e.data.object[0]);
-  console.log(mmm.value.size, "mmm.value.size");
-  if (mmm.value.size < 200) {
-    // if (e.data.object[0] > 1693337348500) {
-      mmm.value.set(e.data.object[0], [e.data.object[3], e.data.object[4], e.data.object[5]])
-    // }
-  }else {
-    const obj = Object.fromEntries(mmm.value);
-    console.log(obj, "obj");
-  }
-  return;
+  // console.log(e.data);
+  // console.log(e.data.key, "e.data.key");
+  // if (mmm.value.size < 300) {
+  //   if (e.data.key >= 1693337505892 && e.data.key <= 1693337538792) {
+  //   mmm.value.set(e.data.key, [
+  //     e.data.bev,
+  //     e.data.objs,
+  //     e.data.bp,
+  //   ]);
+  //   // }
+  // } else {
+  //   const obj = Object.fromEntries(mmm.value);
+  //   console.log(obj, "obj");
+  //   return;
+  // }
+  // return;
   if (e.data.sign === "video") {
     // console.log("video111", e.data.key, video_ok_key.value);
     if (video_ok_key.value < 0) {
@@ -183,7 +188,7 @@ videoWorker.onmessage = async (e) => {
       return;
     }
     if (video_ok_key.value > 0) {
-    // if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
+      // if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
       let k = MemoryPool.keys.find((item) => {
         return item === e.data.key;
       });
@@ -200,19 +205,21 @@ videoWorker.onmessage = async (e) => {
       if (MemoryPool.videosMap["foresight"].size > 0) {
         await updateVideo();
       }
-      animate()
+      animate();
     } else {
       console.error("时间戳", e.data.key, video_ok_key.value);
     }
   }
   if (e.data.sign === "bev") {
-    let a = await handleObjsPoints(e.data.basic, e.data.objs)
+    // let a = await handleObjsPoints(e.data.basic, e.data.objs);
     // console.log(a, "a");
-      MemoryPool.bpMap.set(e.data.key, e.data.bp);
-      MemoryPool.objsMap.set(e.data.key, e.data.objs);
-      // MemoryPool.vObjsMap.set(e.data.key, a);
-      MemoryPool.bevMap.set(e.data.key, e.data.bev);
-      MemoryPool.v_o.set(e.data.key, e.data.v_objs);
+    MemoryPool.bpMap.set(e.data.key, e.data.bp);
+    // MemoryPool.objs8Map.set(e.data.key, e.data.objs_8);
+    // MemoryPool.besicMap.set(e.data.key, e.data.basic);
+    MemoryPool.objsMap.set(e.data.key, e.data.objs);
+    // MemoryPool.vObjsMap.set(e.data.key, a);
+    MemoryPool.bevMap.set(e.data.key, e.data.bev);
+    MemoryPool.v_o.set(e.data.key, e.data.v_objs);
   }
 };
 const props = defineProps(["videoStart"]);
@@ -262,7 +269,7 @@ async function animate() {
   }
   // console.log(Date.now(), "ppppp");
   animationFrameId.value = requestAnimationFrame(() => {
-    animate()
+    animate();
   });
 }
 
@@ -274,6 +281,8 @@ async function updateVideo() {
     // console.log(MemoryPool.objsMap.size, "objsMap.size");
     let objs = MemoryPool.objsMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
+      // basic = MemoryPool.besicMap.get(key),
+      // objs8s = MemoryPool.objs8Map.get(key);
     // let v_objs = MemoryPool.vObjsMap.get(key);
     let v_o = MemoryPool.v_o.get(key);
     if (MemoryPool.hasVideo(key)) {
@@ -281,53 +290,66 @@ async function updateVideo() {
         await BEV.value.drawBev({
           objs: objs ? objs : null,
           bevs_point: bevs_point ? bevs_point : null,
-          bev: MemoryPool.bevMap.get(key)
+          bev: MemoryPool.bevMap.get(key),
         }),
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
           key: key,
           // objs: v_objs,
-          v_o: v_o
+          v_o: v_o,
+          // basic: basic,
+          // objs8s: objs8s,
         }),
         await right_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_front"),
           key: key,
           // objs: v_objs,
-          v_o: v_o
+          v_o: v_o,
+          // basic: basic,
+          // objs8s: objs8s,
         }),
         await left_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_front"),
           key: key,
           // objs: v_objs,
-          v_o: v_o
+          v_o: v_o,
+          // basic: basic,
+          // objs8s: objs8s,
         }),
         await rearview.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "rearview"),
           key: key,
           // objs: v_objs,
-          v_o: v_o
+          v_o: v_o,
+          // basic: basic,
+          // objs8s: objs8s,
         }),
         await left_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_back"),
           key: key,
           // objs: v_objs,
-          v_o: v_o
+          v_o: v_o,
+          // basic: basic,
+          // objs8s: objs8s,
         }),
         await right_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_back"),
           key: key,
           // objs: v_objs,
-          v_o: v_o
+          v_o: v_o,
+          // basic: basic,
+          // objs8s: objs8s,
         }),
       ]);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
-      MemoryPool.bevMap.delete(key)
+      MemoryPool.bevMap.delete(key);
       MemoryPool.bpMap.delete(key);
+      // MemoryPool.besicMap.delete(key);
       // MemoryPool.vObjsMap.delete(key);
       MemoryPool.objsMap.delete(key);
-      MemoryPool.v_o.delete(key)
-      MemoryPool.clearMaps(key)
+      MemoryPool.v_o.delete(key);
+      MemoryPool.clearMaps(key);
       key = null;
     }
     resolve("");

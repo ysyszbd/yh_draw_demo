@@ -1,12 +1,19 @@
 /*
- * @LastEditTime: 2024-04-08 11:46:31
+ * @LastEditTime: 2024-04-13 19:59:00
  * @Description:
  */
 /*
  * @LastEditTime: 2024-03-29 16:21:28
  * @Description:./
  */
-import { construct2DArray } from "@/controls/box2img";
+// import * as cv from "@techstark/opencv-js";
+import {
+  construct2DArray,
+  project_lidar2img,
+  view_ship,
+  distCoefis,
+  cameralatrix,
+} from "@/controls/box2img";
 export default class Video {
   dom; // 外侧dom，利用该dom计算子元素宽高
   dom_w;
@@ -38,7 +45,7 @@ export default class Video {
     "4-0": "rgb(255, 255, 0)",
     "4-1": "rgb(255,  128,   0)",
     "5-0": "rgb(0, 255,  0)",
-    "5-1": "rgb(0,  128, 128)",
+    // "5-1": "rgb(0,  128, 128)",
   };
   color;
   obj_data;
@@ -55,6 +62,9 @@ export default class Video {
     right_back: 80,
   };
   objs_img = null;
+  mapx = null;
+  mapy = null;
+  dst = null;
   constructor(id) {
     this.init(id);
   }
@@ -70,18 +80,40 @@ export default class Video {
       willReadFrequently: true,
     });
     this.id = id;
+
+    // cv.onRuntimeInitialized = () => {
+    //   this.mapx = cv.Mat();
+    //   this.mapy = cv.Mat();
+    //   this.dst = cv.Mat();
+    //   cv.initUndistortRectifyiap(
+    //     cameralatrix[id],
+    //     distCoefis[id],
+    //     new cv.Mat(),
+    //     cameralatrix[id],
+    //     {
+    //       width: 960,
+    //       height: 480,
+    //     },
+    //     cv.CV_32FC1,
+    //     this.mapx,
+    //     this.mapy
+    //   );
+    // };
   }
   async drawVideo(data) {
     // 使用canvas外部的元素来控制canvas的大小
     let w = 960;
     let h = 480;
-    // console.log(data.objs, "data");
+    // console.log(data, "data");
     if (this.helper_dom.width != w || this.helper_dom.height != h) {
       this.helper_dom.width = w;
       this.helper_dom.height = h;
     }
     // this.helper_ctx.clearRect(0, 0, w, h);
     if (data.bg) {
+      // const imageData = data.bg.getImageData(0, 0, 960, 480);
+      // let srcMat = cv.matFromImageData(imageData);
+      // cv.remap(data.bg, this.dst, this.mapx, this.mapy, cv.INTER_NEAREST);
       this.helper_ctx.drawImage(data.bg, 0, 0, w, h);
       data.bg.close();
     }
@@ -102,30 +134,37 @@ export default class Video {
   drawVideoObjs(objs, view, key) {
     return new Promise((resolve, reject) => {
       objs.filter((item) => {
-        this.color = this.box_color[`${item[0]}-${item[1]}`] ? this.box_color[`${item[0]}-${item[1]}`] : "red";
-        this.obj_data = [
-          ...item.slice(0, 3),
-        ];
-        // console.log(item, "item");
-        let box = construct2DArray(item.slice(
-          this.view_ship_arr[view] + 3,
-          this.view_ship_arr[view] + 19
-        ), 8, 2);
-        // console.log(box, "box");
-        this.v_objs_cxt.beginPath();
-        this.v_objs_cxt.fillStyle = this.color;
-        this.v_objs_cxt.font = "18px serif";
-        let points = item.slice(this.view_ship_arr[this.id], 16);
-        this.text = this.v_objs_cxt.measureText(this.obj_data[2]);
-        let x =
-            (box[7][0] - box[6][0]) / 2 +
-            box[6][0] -
-            this.text.width / 2,
-          y = box[6][1];
-        this.v_objs_cxt.fillRect(x - 1, y - 18, this.text.width + 1, 18);
-        this.v_objs_cxt.fillStyle = "#fff";
-        this.v_objs_cxt.fillText(this.obj_data[2], x, y);
-        this.drawBox(box);
+        if (this.box_color[`${item[0]}-${item[1]}`]) {
+          this.color = this.box_color[`${item[0]}-${item[1]}`]
+            ? this.box_color[`${item[0]}-${item[1]}`]
+            : "black";
+          this.obj_data = [...item.slice(0, 3)];
+          // console.log(item, "item");
+          let box = construct2DArray(
+            item.slice(
+              this.view_ship_arr[view] + 3,
+              this.view_ship_arr[view] + 19
+            ),
+            8,
+            2
+          );
+          this.v_objs_cxt.beginPath();
+          this.v_objs_cxt.fillStyle = this.color;
+          this.v_objs_cxt.font = "18px serif";
+          // let points = item.slice(this.view_ship_arr[this.id], 16);
+          this.text = this.v_objs_cxt.measureText(this.obj_data[2]);
+          let x = (box[7][0] - box[6][0]) / 2 + box[6][0] - this.text.width / 2,
+            y = box[6][1];
+          this.v_objs_cxt.fillRect(x - 1, y - 18, this.text.width + 1, 18);
+          this.v_objs_cxt.fillStyle = "#fff";
+          this.v_objs_cxt.fillText(this.obj_data[2], x, y);
+          this.v_objs_cxt.lineWidth = "1.4"; //线条 宽度
+          this.v_objs_cxt.strokeStyle = this.color;
+          this.drawBox(box);
+        } else {
+          // let type = `${item[0]}-${item[1]}`;
+          // console.log(type, "type");
+        }
       });
       this.v_objs_cxt.fillStyle = "white";
       this.v_objs_cxt.fillRect(10, 20, 180, 30);
@@ -136,8 +175,6 @@ export default class Video {
     });
   }
   drawBox(box) {
-    this.v_objs_cxt.lineWidth = "1.4"; //线条 宽度
-    this.v_objs_cxt.strokeStyle = this.color;
     this.v_objs_cxt.moveTo(box[0][0], box[0][1]); //移动到某个点；
     this.v_objs_cxt.lineTo(box[1][0], box[1][1]);
     this.v_objs_cxt.lineTo(box[5][0], box[5][1]);

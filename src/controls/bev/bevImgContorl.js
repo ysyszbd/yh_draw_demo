@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-09 21:49:23
+ * @LastEditTime: 2024-04-14 16:14:01
  * @Description:
  */
 /*
@@ -71,7 +71,8 @@ export default class bevImgContorl {
     bus: null,
     bus_group: new THREE.Object3D(),
     bus_tags: new THREE.Object3D(),
-    bus_rot: Math.PI,
+    bus_rot: 0,
+    // bus_rot: Math.PI,
     bus_whl: {},
     trailer: null,
     trailer_group: new THREE.Object3D(),
@@ -98,11 +99,11 @@ export default class bevImgContorl {
     pedestrian_tags: new THREE.Object3D(),
     pedestrian_rot: Math.PI / 2 + Math.PI / 3,
     pedestrian_whl: {},
-    street_cone: null,
-    street_cone_group: new THREE.Object3D(),
-    street_cone_tags: new THREE.Object3D(),
-    street_cone_rot: Math.PI / 2,
-    street_cone_whl: {},
+    // street_cone: null,
+    // street_cone_group: new THREE.Object3D(),
+    // street_cone_tags: new THREE.Object3D(),
+    // street_cone_rot: Math.PI / 2,
+    // street_cone_whl: {},
     tags_group: new THREE.Object3D(),
   };
   obj_index = {
@@ -115,7 +116,7 @@ export default class bevImgContorl {
     "4-0": "motorcycle",
     "4-1": "bicycle",
     "5-0": "pedestrian",
-    "5-1": "street_cone",
+    // "5-1": "street_cone",
   };
   material = null;
   geometry = null;
@@ -162,17 +163,16 @@ export default class bevImgContorl {
   // 更新bev
   async getData(data) {
     try {
-      if (!data.bevs_point) return;
       // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
-        if(data.bev) {
-          this.bev_imgData = await this.drawBev(data.bev);
-          console.log(this.bev_imgData, "this.bev_imgData");
-          this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
-          this.bev_imgData.close();
-          this.bev_imgData = null;
-          this.mapBg.needsUpdate = true;
-        }
+        // if (data.bev) {
+        //   this.bev_imgData = await this.drawBev(data.bev);
+        //   // console.log(this.bev_imgData, "this.bev_imgData");
+        //   this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
+        //   this.bev_imgData.close();
+        //   this.bev_imgData = null;
+        //   this.mapBg.needsUpdate = true;
+        // }
         if (data.bevs_point) {
           // console.log(data.bevs_point, "data.bevs_point");
           this.handleLine(data.bevs_point);
@@ -190,9 +190,12 @@ export default class bevImgContorl {
   }
   drawBev(bev) {
     return new Promise((resolve, reject) => {
+      // console.log(bev.length,"bev");
       this.bev_context = this.bev_canvas.getContext("2d");
       this.imgData = new ImageData(200, 200);
+      // console.log(this.imgData.data.length,"this.imgData.data.length");
       for (let i = 0; i < this.imgData.data.length; i += 4) {
+        // console.log(i / 4, "i / 4");
         let num = bev[i / 4];
         let color = this.map.get(num);
         this.imgData.data[i + 0] = color[0];
@@ -256,14 +259,14 @@ export default class bevImgContorl {
       const matLine = this.track(
         new LineMaterial({
           color: color,
-          linewidth: 10,
+          linewidth: 4,
           dashed: false,
           vertexColors: false,
         })
       );
-      matLine.polygonOffset = true;
-      matLine.polygonOffsetFactor = 1;
-      matLine.polygonOffsetUnits = 1;
+      // matLine.polygonOffset = true;
+      // matLine.polygonOffsetFactor = 1;
+      // matLine.polygonOffsetUnits = 1;
 
       matLine.resolution.set(this.dom_width, this.dom_height);
       // matLine.resolution.set(window.innerWidth, window.innerHeight);
@@ -279,7 +282,7 @@ export default class bevImgContorl {
     this.pointsMaterial = new THREE.PointsMaterial({
       color: 0xff0000,
       size: 0.8, // 设置点的大小
-      sizeAttenuation: true // 确定点的大小是否随着距离摄像机远近而衰减
+      sizeAttenuation: true, // 确定点的大小是否随着距离摄像机远近而衰减
     });
   }
   setPoints(bevs_point) {
@@ -295,34 +298,36 @@ export default class bevImgContorl {
     bevs_point.forEach((item) => {
       let p_g = this.pointsGeometry.clone();
       let points_arr = this.handlePoints(item[1], "line");
-      p_g.setAttribute('position', new THREE.Float32BufferAttribute(points_arr, 3));
+      p_g.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(points_arr, 3)
+      );
       let p_m = this.pointsMaterial.clone();
       const clonedPoints = new THREE.Points(p_g, p_m);
-      
+
       this.points_g.add(clonedPoints);
       this.scene.add(this.points_g);
-    })
+    });
   }
   // 处理带宽度的线条坐标数据
   handlePoints(pointsArr, sign = "bev") {
     // 处理坐标数据
     if (sign === "line") {
       const points = new Float32Array(200 * 3);
-      for(let i = 0; i < points.length; i+=3) {
+      for (let i = 0; i < points.length; i += 3) {
         let data0 = pointsArr[i * 5];
         if (data0) {
-          points[i+0] = -data0[1];
-          points[i+1] = data0[0];
-          points[i+2] = 0;
-        }else {
-          points[i+0] = -pointsArr[pointsArr.length - 1][1];
-          points[i+1] = pointsArr[pointsArr.length - 1][0];
-          points[i+2] = 0;
+          points[i + 0] = -data0[1];
+          points[i + 1] = data0[0];
+          points[i + 2] = 0;
+        } else {
+          points[i + 0] = -pointsArr[pointsArr.length - 1][1];
+          points[i + 1] = pointsArr[pointsArr.length - 1][0];
+          points[i + 2] = 0;
         }
       }
       return points;
     }
-    
   }
   // 更新障碍物
   async handleObjs(objs_data) {
@@ -341,9 +346,7 @@ export default class bevImgContorl {
         this.lines.group.add(line);
       });
       this.scene.add(this.lines.group);
-    } 
-    else {
-
+    } else {
       if (this.lines.group.children.length > 50) {
         console.log("大于50---lines");
         for (let j = 50; j < this.lines.group.children.length; j++) {
@@ -359,7 +362,9 @@ export default class bevImgContorl {
         for (let i = 0; i < bevs_point.length; i++) {
           let points = this.handlePoints(bevs_point[i][1], "line");
           this.lines.group.children[i].geometry.setPositions(points);
-          this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
+          this.lines.group.children[
+            i
+          ].geometry.attributes.position.needsUpdate = true;
           this.lines.group.children[i].material.color.set(
             this.lineColors[bevs_point[i][0]]
           );
@@ -373,13 +378,17 @@ export default class bevImgContorl {
           this.lines.group.children[j].geometry.setPositions([
             100, 100, 0, 100, 100, 0,
           ]);
-          this.lines.group.children[j].geometry.attributes.position.needsUpdate = true;
+          this.lines.group.children[
+            j
+          ].geometry.attributes.position.needsUpdate = true;
         }
       } else {
         for (let i = 0; i < this.lines.group.children.length; i++) {
           let points = this.handlePoints(bevs_point[i][1], "line");
           this.lines.group.children[i].geometry.setPositions(points);
-          this.lines.group.children[i].geometry.attributes.position.needsUpdate = true;
+          this.lines.group.children[
+            i
+          ].geometry.attributes.position.needsUpdate = true;
           this.lines.group.children[i].material.color.set(
             this.lineColors[bevs_point[i][0]]
           );
@@ -399,7 +408,6 @@ export default class bevImgContorl {
         this.scene.add(this.lines.group);
       }
     }
-    
   }
   // 操作具体的障碍物
   async handle3D(type, data) {
@@ -436,7 +444,9 @@ export default class bevImgContorl {
             let c_model = model.scene.clone();
             c_model.matrixAutoUpdate = true;
             c_model.position.set(-point[1], point[0], 0);
-            c_model.rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(point[9])) + this.objs[`${type}_rot`];
+            c_model.rotation.y =
+              THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(point[9])) +
+              this.objs[`${type}_rot`];
             group.add(c_model);
             let label3DSprite = this.tag3DSprite(point[12]);
             let pos3 = new THREE.Vector3();
@@ -455,7 +465,9 @@ export default class bevImgContorl {
         if (group.children.length >= data.length) {
           for (let i = 0; i < data.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(data[i][9])) + this.objs[`${type}_rot`];
+            group.children[i].rotation.y =
+              THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(data[i][9])) +
+              this.objs[`${type}_rot`];
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
             pos3.z = data[i][5] + 1;
@@ -481,7 +493,9 @@ export default class bevImgContorl {
         } else {
           for (let i = 0; i < group.children.length; i++) {
             group.children[i].position.set(-data[i][1], data[i][0], 0);
-            group.children[i].rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(data[i][9])) + this.objs[`${type}_rot`];
+            group.children[i].rotation.y =
+              THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(data[i][9])) +
+              this.objs[`${type}_rot`];
             let pos3 = new THREE.Vector3();
             group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
             pos3.z = data[i][5] + 1;
@@ -493,7 +507,9 @@ export default class bevImgContorl {
             let l_c_model = model.scene.clone();
             l_c_model.matrixAutoUpdate = true;
             l_c_model.position.set(-data[j][1], data[j][0], 0);
-            l_c_model.rotation.y = THREE.MathUtils.degToRad(-THREE.MathUtils.radToDeg(data[j][9])) + this.objs[`${type}_rot`];
+            l_c_model.rotation.y =
+              THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(data[j][9])) +
+              this.objs[`${type}_rot`];
             group.add(l_c_model);
             let label3DSprite = this.tag3DSprite(data[j][12]);
             let pos3 = new THREE.Vector3();
@@ -564,10 +580,16 @@ export default class bevImgContorl {
   init() {
     this.scene = new THREE.Scene();
     let rect = this.rgb_data.dom.getBoundingClientRect();
-    this.dom_width = (rect.width * document.documentElement.clientWidth) / 1080 - 26;
+    this.dom_width =
+      (rect.width * document.documentElement.clientWidth) / 1080 - 26;
     this.dom_height =
       (rect.height * document.documentElement.clientWidth) / 1080 - 26;
-    this.camera = new THREE.PerspectiveCamera(80, width / height, 1, 10000);
+    this.camera = new THREE.PerspectiveCamera(
+      80,
+      this.dom_width / this.dom_height,
+      1,
+      10000
+    );
     this.camera.position.set(0, -5, 30);
     // this.camera.position.set(0, -5, 55);
     // this.camera.position.set(0, -15, 6);
@@ -577,7 +599,7 @@ export default class bevImgContorl {
       antialias: true,
       alpha: true,
     });
-    
+
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.setSize(this.dom_width, this.dom_height);
     this.renderer2 = new CSS3DRenderer();
@@ -589,7 +611,7 @@ export default class bevImgContorl {
     this.rgb_data.dom.appendChild(this.renderer2.domElement);
     this.renderer.toneMapping = THREE.ReinhardToneMapping;
     this.renderer.toneMappingExposure = 2.0;
-    this.setMesh();
+    // this.setMesh();
     this.setAmbientLight();
     this.setControls();
     // this.addSky();
@@ -604,12 +626,10 @@ export default class bevImgContorl {
     this.bev.dom.height = 200;
     this.bev.dom.width = 200;
 
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    this.bev.ctx.scale(devicePixelRatio, devicePixelRatio);
     this.bev.ctx.imageSmoothingEnabled = true;
     this.bev.ctx.imageSmoothingQuality = "high";
     this.bev.ctx.fillStyle = `rgba(80, 82, 79, 0)`;
-    this.bev.ctx.fillRect(0, 0, this.bev.dom.width, this.bev.dom.height);
+    this.bev.ctx.fillRect(0, 0, 100, 100);
     this.mapBg = this.track(new THREE.CanvasTexture(this.bev.dom));
     this.mapBg.colorSpace = THREE.SRGBColorSpace;
     this.mapBg.wrapS = this.mapBg.wrapT = THREE.RepeatWrapping;
@@ -662,7 +682,7 @@ export default class bevImgContorl {
         "motorcycle",
         "bicycle",
         "pedestrian",
-        "street_cone",
+        // "street_cone",
       ];
       const res = await Promise.all(filesArr.map(this.loadFile));
       this.objs.start = true;
@@ -672,11 +692,18 @@ export default class bevImgContorl {
         let gltf = this.objs[item.id].scene;
         if (item.id === "main_car") {
           const box = this.track(new THREE.Box3().setFromObject(gltf)),
-          center = box.getCenter(new THREE.Vector3());
-          size = box.getSize(new THREE.Vector3());
-          // gltf.position.y = -(size.y / 2) - center.y;
+            center = box.getCenter(new THREE.Vector3());
+            size = box.getSize(new THREE.Vector3());
+            console.log(size, "size");
+          gltf.position.y = 0;
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
+          // 必须使用对应点的材质，size为点的大小
+          // const geometry = new THREE.BufferGeometry();
+          // geometry.setAttribute('position', center);
+          // let material = new THREE.PointsMaterial({ color: "red", size: 2 });
+          // let mesh = new THREE.Points(geometry, material);
+          // this.scene.add(mesh);
           // gltf.scale.set(2, 2, 2);
         } else if (item.id === "car") {
           gltf.rotation.x = Math.PI / 2;
@@ -690,16 +717,16 @@ export default class bevImgContorl {
         } else if (item.id === "truck") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
-          gltf.position.y = -100;
-          gltf.position.x = -100;
+          gltf.position.y = -105;
+          gltf.position.x = -105;
           size = this.ge3Dsize(gltf);
           s = 4.8 / size.x;
           // gltf.scale.set(s, s, s);
         } else if (item.id === "bus") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
-          gltf.position.y = -120;
-          gltf.position.x = -120;
+          // gltf.rotation.y = Math.PI;
+          gltf.position.y = -100;
+          gltf.position.x = -100;
           size = this.ge3Dsize(gltf);
           s = 2.5 / size.x;
           // gltf.scale.set(0.7, 0.7, 0.7);
@@ -713,13 +740,13 @@ export default class bevImgContorl {
           // gltf.scale.set(2,2,2);
         } else if (item.id === "barrier") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.position.x = -145;
-          gltf.position.y = -144;
+          gltf.position.x = -105;
+          gltf.position.y = -140;
           // gltf.scale.set(2,2,2);
         } else if (item.id === "motorcycle") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.position.x = 105;
-          gltf.position.y = -124;
+          gltf.position.x = 150;
+          gltf.position.y = -152;
           size = this.ge3Dsize(gltf);
           s = 0.98 / size.x;
           // gltf.scale.set(s, s, s);
@@ -743,16 +770,18 @@ export default class bevImgContorl {
           s = 3.5 / size.z;
           // gltf.scale.set(0.5, 0.5, 0.5);
           gltf.scale.set(s, s, s);
-        } else if (item.id === "street_cone") {
-          gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI / 2;
-          gltf.position.x = 100;
-          gltf.position.y = -144;
-          size = this.ge3Dsize(gltf);
-          s = 0.8 / size.z;
-          // gltf.scale.set(s, s, s);
-          // gltf.scale.set(2,2,2);
-        } else if (item.id === "construction_vehicle") {
+        }
+        // else if (item.id === "street_cone") {
+        //   gltf.rotation.x = Math.PI / 2;
+        //   gltf.rotation.y = Math.PI / 2;
+        //   gltf.position.x = 100;
+        //   gltf.position.y = -144;
+        //   size = this.ge3Dsize(gltf);
+        //   s = 0.8 / size.z;
+        //   // gltf.scale.set(s, s, s);
+        //   // gltf.scale.set(2,2,2);
+        // }
+        else if (item.id === "construction_vehicle") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
           gltf.position.x = 100;
@@ -835,7 +864,7 @@ export default class bevImgContorl {
       "rgb(158, 156, 153)"
     );
     gridHelper.rotation.x = -(Math.PI / 2);
-    const axesHelper = new THREE.AxesHelper(15);
+    const axesHelper = new THREE.AxesHelper(10);
     this.scene.add(axesHelper);
     this.scene.add(gridHelper);
   }

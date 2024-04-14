@@ -23,6 +23,7 @@ export default class MemoryPool {
       left_back: new Map(),
       left_front: new Map(),
     };
+    this.objs8Map = new Map();
     this.objsMap = new Map(); // 原始obj数据
     this.vObjsMap = new Map(); // 视频的障碍物数据
     this.v_o = new Map();

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@msgpack/msgpack": "3.0.0-beta2",
+    "@techstark/opencv-js": "4.9.0-release.3",
     "autoprefixer": "^10.4.18",
     "echarts": "^5.5.0",
     "eventemitter3": "^5.0.1",

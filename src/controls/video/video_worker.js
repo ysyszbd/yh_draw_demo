@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-09 21:35:47
+ * @LastEditTime: 2024-04-13 21:10:27
  * @Description: 视频相关worker,只负责视频的数据接收
  */
 import { decode } from "@msgpack/msgpack";
@@ -24,7 +24,7 @@ self.onmessage = async (e) => {
 let mmm = new Map();
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 const webSocketInit = (reconnect, webSocketInit) => {
-  ws = new WebSocket("ws://192.168.8.66:1234");
+  ws = new WebSocket("ws://192.168.1.66:1234");
   ws.binaryType = "arraybuffer";
   ws.onopen = function () {
     timeConnect = 0;
@@ -35,55 +35,58 @@ const webSocketInit = (reconnect, webSocketInit) => {
       let object = decode(e.data);
       // console.log(object, "object");
       
-      // if (object[1].length > 0) {
-      //   f_buffer = v_uni8.slice(0, object[1][0].length);
-      //   f_buffer.set(object[1][0]);
-      //   rf_buffer = v_uni8.slice(0, object[1][1].length);
-      //   rf_buffer.set(object[1][1]);
-      //   lf_buffer = v_uni8.slice(0, object[1][2].length);
-      //   lf_buffer.set(object[1][2]);
-      //   r_buffer = v_uni8.slice(0, object[1][3].length);
-      //   r_buffer.set(object[1][3]);
-      //   lb_buffer = v_uni8.slice(0, object[1][4].length);
-      //   lb_buffer.set(object[1][4]);
-      //   rb_buffer = v_uni8.slice(0, object[1][5].length);
-      //   rb_buffer.set(object[1][5]);
-      //   postMessage({
-      //     f_buffer,
-      //     r_buffer,
-      //     rf_buffer,
-      //     rb_buffer,
-      //     lf_buffer,
-      //     lb_buffer,
-      //     key: object[0],
-      //     sign: "video",
-      //   });
-      //   f_buffer = null;
-      //   r_buffer = null;
-      //   rf_buffer = null;
-      //   rb_buffer = null;
-      //   lf_buffer = null;
-      //   lb_buffer = null;
-      // }
-      if (object[2][1] != 0) {
-        // console.log(object, "object");
-        // let saf = await handleVO(object[2], object[4], object[0]);
-        // // console.log(saf, "saf", object[0]);
-        // bev_buffer = v_uni8.slice(0, object[3].length);
-        // bev_buffer.set(object[3]);
-        // postMessage({
-        //   bp: object[5],
-        //   bev: bev_buffer,
-        //   objs: object[4],
-        //   // objs: saf.bev_objs,
-        //   v_objs: saf.v_objs,
-        //   key: object[0],
-        //   sign: "bev",
-        //   basic: object[2]
-        // });
+      if (object[1].length > 0) {
+        f_buffer = v_uni8.slice(0, object[1][0].length);
+        f_buffer.set(object[1][0]);
+        rf_buffer = v_uni8.slice(0, object[1][1].length);
+        rf_buffer.set(object[1][1]);
+        lf_buffer = v_uni8.slice(0, object[1][2].length);
+        lf_buffer.set(object[1][2]);
+        r_buffer = v_uni8.slice(0, object[1][3].length);
+        r_buffer.set(object[1][3]);
+        lb_buffer = v_uni8.slice(0, object[1][4].length);
+        lb_buffer.set(object[1][4]);
+        rb_buffer = v_uni8.slice(0, object[1][5].length);
+        rb_buffer.set(object[1][5]);
         postMessage({
-          object
+          f_buffer,
+          r_buffer,
+          rf_buffer,
+          rb_buffer,
+          lf_buffer,
+          lb_buffer,
+          key: object[0],
+          sign: "video",
         });
+        f_buffer = null;
+        r_buffer = null;
+        rf_buffer = null;
+        rb_buffer = null;
+        lf_buffer = null;
+        lb_buffer = null;
+      }
+      if (object[2][1] != 0) {
+        // let objs_8 = await handleV_8(object[4], object[0]);
+        // console.log(object, "object");
+        let saf = await handleVO(object[2], object[4], object[0]);
+        // console.log(saf.bev_objs, "saf", object[0]);
+        // console.log(object[4], "object[4]", object[0]);
+        bev_buffer = v_uni8.slice(0, object[3].length);
+        bev_buffer.set(object[3]);
+        postMessage({
+          bp: object[5],
+          bev: bev_buffer,
+          // objs: object[4],
+          objs: saf.bev_objs,
+          v_objs: saf.v_objs,
+          key: object[0],
+          sign: "bev",
+          basic: object[2],
+          // objs_8: objs_8,
+        });
+        // postMessage({
+        //   object
+        // });
       }
     }
   };
@@ -271,7 +274,8 @@ async function handleVO(base, objs, key) {
                 base[4][ele.v_index],
                 base[5],
                 base[6][ele.v_index],
-                base[8][ele.v_index]
+                base[8][ele.v_index],
+
               );
               view_a[ele.sign].push(a);
             });
@@ -359,6 +363,29 @@ async function handleObjsPoints(base, objs) {
     resolve(objs);
   });
 }
+let buffer_obj, buffer_objs;
+async function handleV_8(objs) {
+  try {
+    return new Promise(async (resolve, reject) => {
+      buffer_obj = [];
+      buffer_objs = [];
+      for (j = 0; j < objs.length; j++) {
+        points_eight = await GetBoundingBoxPoints(...objs[j].slice(0, 6), objs[j][9]);
+        // console.log(points_eight, "points_eight")
+        buffer_obj = v_uni8.slice(0, 27);
+        buffer_obj.set(points_eight.flat(), 3);
+        buffer_obj.set([objs[j][7]], 0);
+        buffer_obj.set([objs[j][8]], 1);
+        buffer_obj.set([objs[j][12]], 2);
+        // console.log(buffer_obj, "buffer_obj--------");
+        buffer_objs.push(buffer_obj);
+      }
+      resolve(buffer_objs);
+    });
+  } catch (err) {
+    console.log(err, "err---handleVO");
+  }
+}
 // 将3d坐标转换为2D坐标
 // ext转为4*4，k转为3*3
 let pt_cam_x,
@@ -381,6 +408,7 @@ let pt_cam_x,
   x_d,
   y_d;
 function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
+  
   pt_cam_x =
     pts[0] * ext_lidar2cam[0] +
     pts[1] * ext_lidar2cam[1] +
