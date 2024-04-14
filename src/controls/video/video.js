@@ -1,19 +1,8 @@
 /*
- * @LastEditTime: 2024-04-13 19:59:00
+ * @LastEditTime: 2024-04-14 17:07:33
  * @Description:
  */
-/*
- * @LastEditTime: 2024-03-29 16:21:28
- * @Description:./
- */
-// import * as cv from "@techstark/opencv-js";
-import {
-  construct2DArray,
-  project_lidar2img,
-  view_ship,
-  distCoefis,
-  cameralatrix,
-} from "@/controls/box2img";
+import { construct2DArray } from "@/controls/box2img";
 export default class Video {
   dom; // 外侧dom，利用该dom计算子元素宽高
   dom_w;
@@ -47,11 +36,14 @@ export default class Video {
     "5-0": "rgb(0, 255,  0)",
     // "5-1": "rgb(0,  128, 128)",
   };
-  color;
-  obj_data;
-  text;
-  x;
-  y;
+  obj = {
+    color: null,
+    data: null,
+    text: null,
+    x: 0,
+    y: 0,
+    box: null,
+  };
   old_objs = null;
   view_ship_arr = {
     foresight: 0,
@@ -80,67 +72,35 @@ export default class Video {
       willReadFrequently: true,
     });
     this.id = id;
-
-    // cv.onRuntimeInitialized = () => {
-    //   this.mapx = cv.Mat();
-    //   this.mapy = cv.Mat();
-    //   this.dst = cv.Mat();
-    //   cv.initUndistortRectifyiap(
-    //     cameralatrix[id],
-    //     distCoefis[id],
-    //     new cv.Mat(),
-    //     cameralatrix[id],
-    //     {
-    //       width: 960,
-    //       height: 480,
-    //     },
-    //     cv.CV_32FC1,
-    //     this.mapx,
-    //     this.mapy
-    //   );
-    // };
   }
   async drawVideo(data) {
     // 使用canvas外部的元素来控制canvas的大小
-    let w = 960;
-    let h = 480;
-    // console.log(data, "data");
-    if (this.helper_dom.width != w || this.helper_dom.height != h) {
-      this.helper_dom.width = w;
-      this.helper_dom.height = h;
+    if (this.helper_dom.width != 960 || this.helper_dom.height != 480) {
+      this.helper_dom.width = 960;
+      this.helper_dom.height = 480;
     }
     // this.helper_ctx.clearRect(0, 0, w, h);
     if (data.bg) {
-      // const imageData = data.bg.getImageData(0, 0, 960, 480);
-      // let srcMat = cv.matFromImageData(imageData);
-      // cv.remap(data.bg, this.dst, this.mapx, this.mapy, cv.INTER_NEAREST);
-      this.helper_ctx.drawImage(data.bg, 0, 0, w, h);
+      this.helper_ctx.drawImage(data.bg, 0, 0, 960, 480);
       data.bg.close();
     }
     if (data.v_o) {
       this.objs_img = await this.drawVideoObjs(data.v_o, this.id, data.key);
-      this.helper_ctx.drawImage(this.objs_img, 0, 0, w, h);
+      this.helper_ctx.drawImage(this.objs_img, 0, 0, 960, 480);
       this.objs_img.close();
       this.objs_img = null;
     }
-    // if (data.objs) {
-    //   let a = await this.drawVideoObjs0(data.objs, this.id, data.key);
-    //   this.helper_ctx.drawImage(a, 0, 0, w, h);
-    //   a.close();
-    //   a = null;
-    // }
   }
   // 各view渲染障碍物
   drawVideoObjs(objs, view, key) {
     return new Promise((resolve, reject) => {
       objs.filter((item) => {
         if (this.box_color[`${item[0]}-${item[1]}`]) {
-          this.color = this.box_color[`${item[0]}-${item[1]}`]
+          this.obj.color = this.box_color[`${item[0]}-${item[1]}`]
             ? this.box_color[`${item[0]}-${item[1]}`]
             : "black";
-          this.obj_data = [...item.slice(0, 3)];
-          // console.log(item, "item");
-          let box = construct2DArray(
+          this.obj.obj_data = [...item.slice(0, 3)];
+          this.obj.box = construct2DArray(
             item.slice(
               this.view_ship_arr[view] + 3,
               this.view_ship_arr[view] + 19
@@ -149,18 +109,29 @@ export default class Video {
             2
           );
           this.v_objs_cxt.beginPath();
-          this.v_objs_cxt.fillStyle = this.color;
+          this.v_objs_cxt.fillStyle = this.obj.color;
           this.v_objs_cxt.font = "18px serif";
-          // let points = item.slice(this.view_ship_arr[this.id], 16);
-          this.text = this.v_objs_cxt.measureText(this.obj_data[2]);
-          let x = (box[7][0] - box[6][0]) / 2 + box[6][0] - this.text.width / 2,
-            y = box[6][1];
-          this.v_objs_cxt.fillRect(x - 1, y - 18, this.text.width + 1, 18);
+          this.obj.text = this.v_objs_cxt.measureText(this.obj.obj_data[2]);
+          this.obj.x =
+            (this.obj.box[7][0] - this.obj.box[6][0]) / 2 +
+            this.obj.box[6][0] -
+            this.obj.text.width / 2;
+          this.obj.y = this.obj.box[6][1];
+          this.v_objs_cxt.fillRect(
+            this.obj.x - 1,
+            this.obj.y - 18,
+            this.obj.text.width + 1,
+            18
+          );
           this.v_objs_cxt.fillStyle = "#fff";
-          this.v_objs_cxt.fillText(this.obj_data[2], x, y);
+          this.v_objs_cxt.fillText(
+            this.obj.obj_data[2],
+            this.obj.x,
+            this.obj.y
+          );
           this.v_objs_cxt.lineWidth = "1.4"; //线条 宽度
-          this.v_objs_cxt.strokeStyle = this.color;
-          this.drawBox(box);
+          this.v_objs_cxt.strokeStyle = this.obj.color;
+          this.drawBox(this.obj.box);
         } else {
           // let type = `${item[0]}-${item[1]}`;
           // console.log(type, "type");
@@ -194,86 +165,10 @@ export default class Video {
     this.v_objs_cxt.lineTo(box[7][0], box[7][1]);
     this.v_objs_cxt.stroke(); //描边
   }
-  // 计算视频要放置在dom元素中的宽高--按照视频帧的比例来
-  handleWH(imgW, imgH, domW, domH) {
-    let w = 960,
-      h = 480;
-    if (domW != imgW || domH != imgH) {
-      let box_w = domW - 15,
-        box_h = domH - 15;
-      if (imgW != box_w) {
-        h = (box_w * imgH) / imgW;
-        console.log(h, "");
-        if (h > box_h) {
-          h = box_h;
-          w = (box_h * imgW) / imgH;
-        } else {
-          w = (h * imgW) / imgH;
-          // w = box_w;
-        }
-      }
-    }
-    return {
-      w: w,
-      h: h,
-    };
-  }
   clear() {
     this.dom = null;
     this.handle_box = null;
     this.helper_dom = null;
     this.helper_ctx = null;
-  }
-
-  // 各view渲染障碍物
-  drawVideoObjs0(objs, view, key) {
-    return new Promise((resolve, reject) => {
-      objs.filter((item) => {
-        let color = this.box_color[`${item[7]}-${item[8]}`];
-        let obj_data = item[item.length - 1][view];
-        if (obj_data.length <= 0) return;
-        this.v_objs_cxt0.beginPath();
-        this.v_objs_cxt0.fillStyle = "black";
-        this.v_objs_cxt0.font = "18px serif";
-        let text = this.v_objs_cxt0.measureText(item[12]);
-        let x =
-            (item[13][`${view}`][7][0] - item[13][`${view}`][6][0]) / 2 +
-            item[13][`${view}`][6][0] -
-            text.width / 2,
-          y = item[13][`${view}`][6][1];
-        this.v_objs_cxt0.fillRect(x - 3, y - 20, text.width + 3, 20);
-        this.v_objs_cxt0.fillStyle = "#fff";
-        this.v_objs_cxt0.fillText(item[12], x, y);
-        this.drawBox0(obj_data);
-      });
-      this.v_objs_cxt0.fillStyle = "white";
-      this.v_objs_cxt0.fillRect(10, 20, 180, 30);
-      this.v_objs_cxt0.font = "28px serif";
-      this.v_objs_cxt0.fillStyle = "green";
-      this.v_objs_cxt0.fillText(key, 10, 44);
-      resolve(this.v_objs_canvas0.transferToImageBitmap());
-    });
-  }
-  drawBox0(box) {
-    this.v_objs_cxt0.lineWidth = "1.4"; //线条 宽度
-    this.v_objs_cxt0.strokeStyle = "black";
-    this.v_objs_cxt0.moveTo(box[0][0] + 5, box[0][1] + 5); //移动到某个点；
-    this.v_objs_cxt0.lineTo(box[1][0] + 5, box[1][1] + 5);
-    this.v_objs_cxt0.lineTo(box[5][0] + 5, box[5][1] + 5);
-    this.v_objs_cxt0.lineTo(box[7][0] + 5, box[7][1] + 5);
-    this.v_objs_cxt0.lineTo(box[6][0] + 5, box[6][1] + 5);
-    this.v_objs_cxt0.lineTo(box[2][0] + 5, box[2][1] + 5);
-    this.v_objs_cxt0.lineTo(box[3][0] + 5, box[3][1] + 5);
-    this.v_objs_cxt0.lineTo(box[1][0] + 5, box[1][1] + 5);
-    this.v_objs_cxt0.moveTo(box[0][0] + 5, box[0][1] + 5);
-    this.v_objs_cxt0.lineTo(box[2][0] + 5, box[2][1] + 5);
-    this.v_objs_cxt0.moveTo(box[0][0] + 5, box[0][1] + 5);
-    this.v_objs_cxt0.lineTo(box[4][0] + 5, box[4][1] + 5);
-    this.v_objs_cxt0.lineTo(box[6][0] + 5, box[6][1] + 5);
-    this.v_objs_cxt0.moveTo(box[4][0] + 5, box[4][1] + 5);
-    this.v_objs_cxt0.lineTo(box[5][0] + 5, box[5][1] + 5);
-    this.v_objs_cxt0.moveTo(box[3][0] + 5, box[3][1] + 5);
-    this.v_objs_cxt0.lineTo(box[7][0] + 5, box[7][1] + 5);
-    this.v_objs_cxt0.stroke(); //描边
   }
 }

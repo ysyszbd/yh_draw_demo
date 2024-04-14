@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-14 16:14:01
+ * @LastEditTime: 2024-04-14 21:39:24
  * @Description:
  */
 /*
@@ -127,6 +127,11 @@ export default class bevImgContorl {
     2: "rgba(128, 255, 128, 1)",
     3: "rgba(192, 71, 70, 1)",
   };
+  line_data = null;
+  handler = {
+    label3DSprite: null,
+    pos3: new THREE.Vector3(),
+  };
   animationFrameId = null;
   map = new Map();
   bev_canvas = new OffscreenCanvas(200, 200);
@@ -174,12 +179,10 @@ export default class bevImgContorl {
         //   this.mapBg.needsUpdate = true;
         // }
         if (data.bevs_point) {
-          // console.log(data.bevs_point, "data.bevs_point");
           this.handleLine(data.bevs_point);
           // this.setPoints(data.bevs_point);
         }
         if (data.objs) {
-          // console.log();
           await this.handleObjs(await handleObjs(data.objs));
         }
         resolve("ppp");
@@ -190,12 +193,9 @@ export default class bevImgContorl {
   }
   drawBev(bev) {
     return new Promise((resolve, reject) => {
-      // console.log(bev.length,"bev");
       this.bev_context = this.bev_canvas.getContext("2d");
       this.imgData = new ImageData(200, 200);
-      // console.log(this.imgData.data.length,"this.imgData.data.length");
       for (let i = 0; i < this.imgData.data.length; i += 4) {
-        // console.log(i / 4, "i / 4");
         let num = bev[i / 4];
         let color = this.map.get(num);
         this.imgData.data[i + 0] = color[0];
@@ -209,7 +209,6 @@ export default class bevImgContorl {
   }
   // 初始化道路元素
   setMeshRoad(points, directoin) {
-    // console.log(points[0], directoin);
     try {
       let x0, x2, x1;
       if (directoin === "left") {
@@ -250,6 +249,7 @@ export default class bevImgContorl {
     try {
       // 处理坐标数据
       let points = this.handlePoints(pointsArr, "line");
+      // console.log(points, "points------------");
       const geometry = this.track(
         new LineGeometry({
           linewidth: 20,
@@ -259,17 +259,13 @@ export default class bevImgContorl {
       const matLine = this.track(
         new LineMaterial({
           color: color,
-          linewidth: 4,
+          linewidth: 2,
           dashed: false,
           vertexColors: false,
         })
       );
-      // matLine.polygonOffset = true;
-      // matLine.polygonOffsetFactor = 1;
-      // matLine.polygonOffsetUnits = 1;
 
       matLine.resolution.set(this.dom_width, this.dom_height);
-      // matLine.resolution.set(window.innerWidth, window.innerHeight);
       let line = this.track(new Line2(geometry, matLine));
       line.computeLineDistances();
       return line;
@@ -295,9 +291,23 @@ export default class bevImgContorl {
       this.scene.remove(this.points_g);
       this.points_g.clear();
     }
-    bevs_point.forEach((item) => {
+    // console.log(bevs_point, "bevs_point-----------");
+    for (let i = 0; i < bevs_point.length; i++) {
+      let points = bevs_point[i][1];
+      // if (this.isLine(points)) {
+      //   points = [points[0], points[points.length - 1]];
+      //   let a = this.isLineTooShort(points);
+      //   if (a) {
+      //     break;
+      //   }
+      // } else {
+      //   let a = this.isLineTooShort(points);
+      //   if (a) {
+      //     break;
+      //   }
+      // }
       let p_g = this.pointsGeometry.clone();
-      let points_arr = this.handlePoints(item[1], "line");
+      let points_arr = this.handlePoints(points, "points");
       p_g.setAttribute(
         "position",
         new THREE.Float32BufferAttribute(points_arr, 3)
@@ -307,18 +317,19 @@ export default class bevImgContorl {
 
       this.points_g.add(clonedPoints);
       this.scene.add(this.points_g);
-    });
+    }
   }
   // 处理带宽度的线条坐标数据
-  handlePoints(pointsArr, sign = "bev") {
+  handlePoints(pointsArr, sign = "line") {
+    // console.log(pointsArr, "pointsArr");
     // 处理坐标数据
-    if (sign === "line") {
-      const points = new Float32Array(200 * 3);
+    const points = new Float32Array(200 * 3);
+    if (sign === "points") {
       for (let i = 0; i < points.length; i += 3) {
-        let data0 = pointsArr[i * 5];
-        if (data0) {
-          points[i + 0] = -data0[1];
-          points[i + 1] = data0[0];
+        this.line_data = pointsArr[i * 3];
+        if (this.line_data) {
+          points[i + 0] = -this.line_data[1];
+          points[i + 1] = this.line_data[0];
           points[i + 2] = 0;
         } else {
           points[i + 0] = -pointsArr[pointsArr.length - 1][1];
@@ -327,6 +338,50 @@ export default class bevImgContorl {
         }
       }
       return points;
+    }
+    if (sign === "line") {
+      let sign;
+      if (this.isLine(pointsArr)) {
+        let arr = [pointsArr[0], pointsArr[pointsArr.length - 1]];
+        sign = this.isLineTooShort(arr);
+        if (sign) {
+          arr = [
+            [0, 0],
+            [0, 0],
+          ];
+        }
+        // console.log(arr, "arr");
+        points[0] = -arr[0][1];
+        points[1] = arr[0][0];
+        points[2] = 0;
+        for (let i = 3; i < points.length; i += 3) {
+          points[i + 0] = -arr[arr.length - 1][1];
+          points[i + 1] = arr[arr.length - 1][0];
+          points[i + 2] = 0;
+        }
+        return points;
+      } else {
+        sign = this.isLineTooShort(pointsArr);
+        // console.log(sign, "sign===========");
+        if (sign) {
+          pointsArr = [[100, 100], [100, 100], [100, 100]]
+        }
+        // console.log(pointsArr, "pointsArr------------");
+        for (let i = 0; i < points.length; i += 3) {
+          this.line_data = pointsArr[i * 5];
+          if (this.line_data) {
+            points[i + 0] = -this.line_data[1];
+            points[i + 1] = this.line_data[0];
+            points[i + 2] = 0;
+          } else {
+            points[i + 0] = -pointsArr[pointsArr.length - 1][1];
+            points[i + 1] = pointsArr[pointsArr.length - 1][0];
+            points[i + 2] = 0;
+          }
+        }
+        // console.log(points, "points=======");
+        return points;
+      }
     }
   }
   // 更新障碍物
@@ -339,11 +394,61 @@ export default class bevImgContorl {
       resolve("---------");
     });
   }
+  // 判断是直线还是曲线
+  isLine(points, threshold = 0.9) {
+    // console.log(points, "points");
+    const start = points[0];
+    const end = points[points.length - 1];
+    const slope = (end[0] - start[0]) / (-end[1] + start[1]);
+    const intercept = start[0] - slope * -start[1];
+
+    for (let i = 1; i < points.length - 1; i++) {
+      const point = points[i];
+      const distance =
+        Math.abs(slope * -point[1] - point[0] + intercept) /
+        Math.sqrt(slope * slope + 1);
+      if (distance > threshold) {
+        return false; // 曲线
+      }
+    }
+    return true; // 直线
+  }
+  // 判断线条是否短--直线只需要两个点
+  isLineTooShort(points, threshold = 6) {
+    if (points.length === 2) {
+      const distance = this.calculateDistance(
+        -points[0][1],
+        points[0][0],
+        -points[1][1],
+        points[1][0]
+      );
+      return distance < 8;
+    } else {
+      // 对于曲线，计算所有相邻点对之间的距离并求和
+      let totalLength = 0;
+      for (let i = 1; i < points.length; i++) {
+        totalLength += this.calculateDistance(
+          -points[i - 1][1],
+          points[i - 1][0],
+          -points[i][1],
+          points[i][0]
+        );
+      }
+      // console.log(totalLength, "totalLength");
+      return totalLength < 9;
+    }
+  }
+  // 计算两点之间的距离（直线长度）
+  calculateDistance(x1, y1, x2, y2) {
+    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+  }
+
   async handleLine(bevs_point) {
     if (this.lines.group.children.length <= 0) {
       bevs_point.forEach((item) => {
-        let line = this.setWidthLine(item[1], this.lineColors[item[0]]);
-        this.lines.group.add(line);
+        this.lines.group.add(
+          this.setWidthLine(item[1], this.lineColors[item[0]])
+        );
       });
       this.scene.add(this.lines.group);
     } else {
@@ -360,8 +465,9 @@ export default class bevImgContorl {
       if (this.lines.group.children.length >= bevs_point.length) {
         // console.log("llllll");
         for (let i = 0; i < bevs_point.length; i++) {
-          let points = this.handlePoints(bevs_point[i][1], "line");
-          this.lines.group.children[i].geometry.setPositions(points);
+          this.lines.group.children[i].geometry.setPositions(
+            this.handlePoints(bevs_point[i][1], "line")
+          );
           this.lines.group.children[
             i
           ].geometry.attributes.position.needsUpdate = true;
@@ -384,8 +490,9 @@ export default class bevImgContorl {
         }
       } else {
         for (let i = 0; i < this.lines.group.children.length; i++) {
-          let points = this.handlePoints(bevs_point[i][1], "line");
-          this.lines.group.children[i].geometry.setPositions(points);
+          this.lines.group.children[i].geometry.setPositions(
+            this.handlePoints(bevs_point[i][1], "line")
+          );
           this.lines.group.children[
             i
           ].geometry.attributes.position.needsUpdate = true;
@@ -399,11 +506,12 @@ export default class bevImgContorl {
           j < bevs_point.length;
           j++
         ) {
-          let line = this.setWidthLine(
-            bevs_point[j][1],
-            this.lineColors[bevs_point[j][0]]
+          this.lines.group.add(
+            this.setWidthLine(
+              bevs_point[j][1],
+              this.lineColors[bevs_point[j][0]]
+            )
           );
-          this.lines.group.add(line);
         }
         this.scene.add(this.lines.group);
       }
@@ -448,15 +556,14 @@ export default class bevImgContorl {
               THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(point[9])) +
               this.objs[`${type}_rot`];
             group.add(c_model);
-            let label3DSprite = this.tag3DSprite(point[12]);
-            let pos3 = new THREE.Vector3();
-            c_model.getWorldPosition(pos3); //获取obj世界坐标、
-            // console.log(point, "point", pos3, c_model.position);
-            pos3.z = point[5] + 1;
-            pos3.y -= 16;
-            // console.log(pos3, "pos3");
-            label3DSprite.position.copy(pos3);
-            tags.add(label3DSprite);
+            this.handler.label3DSprite = this.tag3DSprite(point[12]);
+            c_model.getWorldPosition(this.handler.pos3);
+            this.handler.pos3.z = point[5] + 1;
+            this.handler.pos3.y -= 16;
+            this.handler.label3DSprite.position.copy(this.handler.pos3);
+            tags.add(this.handler.label3DSprite);
+            this.handler.label3DSprite = null;
+            this.handler.pos3 = new THREE.Vector3();
           }
         }
         this.scene.add(tags);
@@ -468,12 +575,12 @@ export default class bevImgContorl {
             group.children[i].rotation.y =
               THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(data[i][9])) +
               this.objs[`${type}_rot`];
-            let pos3 = new THREE.Vector3();
-            group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
-            pos3.z = data[i][5] + 1;
-            pos3.y -= 16;
-            tags.children[i].position.copy(pos3);
+            group.children[i].getWorldPosition(this.handler.pos3); //获取obj世界坐标、
+            this.handler.pos3.z = data[i][5] + 1;
+            this.handler.pos3.y -= 16;
+            tags.children[i].position.copy(this.handler.pos3);
             tags.children[i].element.innerHTML = data[i][12];
+            this.handler.pos3 = new THREE.Vector3();
           }
           if (group.children.length > 50) {
             console.log("大于50---objs11111");
@@ -496,11 +603,11 @@ export default class bevImgContorl {
             group.children[i].rotation.y =
               THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(data[i][9])) +
               this.objs[`${type}_rot`];
-            let pos3 = new THREE.Vector3();
-            group.children[i].getWorldPosition(pos3); //获取obj世界坐标、
-            pos3.z = data[i][5] + 1;
-            pos3.y -= 16;
-            tags.children[i].position.copy(pos3);
+            group.children[i].getWorldPosition(this.handler.pos3); //获取obj世界坐标、
+            this.handler.pos3.z = data[i][5] + 1;
+            this.handler.pos3.y -= 16;
+            tags.children[i].position.copy(this.handler.pos3);
+            this.handler.pos3 = new THREE.Vector3();
           }
 
           for (let j = group.children.length; j < data.length; j++) {
@@ -511,13 +618,14 @@ export default class bevImgContorl {
               THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(data[j][9])) +
               this.objs[`${type}_rot`];
             group.add(l_c_model);
-            let label3DSprite = this.tag3DSprite(data[j][12]);
-            let pos3 = new THREE.Vector3();
-            l_c_model.getWorldPosition(pos3); //获取obj世界坐标、
-            pos3.z = data[j][5] + 1;
-            pos3.y -= 16;
-            label3DSprite.position.copy(pos3);
-            tags.add(label3DSprite);
+            this.handler.label3DSprite = this.tag3DSprite(data[j][12]);
+            l_c_model.getWorldPosition(this.handler.pos3); //获取obj世界坐标、
+            this.handler.pos3.z = data[j][5] + 1;
+            this.handler.pos3.y -= 16;
+            this.handler.label3DSprite.position.copy(this.handler.pos3);
+            tags.add(this.handler.label3DSprite);
+            this.handler.pos3 = new THREE.Vector3();
+            this.handler.label3DSprite = null;
           }
           this.scene.add(group);
           this.scene.add(tags);
@@ -693,8 +801,8 @@ export default class bevImgContorl {
         if (item.id === "main_car") {
           const box = this.track(new THREE.Box3().setFromObject(gltf)),
             center = box.getCenter(new THREE.Vector3());
-            size = box.getSize(new THREE.Vector3());
-            console.log(size, "size");
+          size = box.getSize(new THREE.Vector3());
+          console.log(size, "size");
           gltf.position.y = 0;
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;

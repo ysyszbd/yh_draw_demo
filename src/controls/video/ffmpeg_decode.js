@@ -109,82 +109,18 @@ let dist = {
 let v_canvas = new OffscreenCanvas(960, 480),
   v_context = v_canvas.getContext("2d"),
   imgData;
-let cv_status = false;
+let cv_start = false;
 var Module = typeof Module != "undefined" ? Module : {};
 Module = {};
 cv["onRuntimeInitialized"] = () => {
+  postMessage({
+    type: "message",
+    info: "opencv_init",
+  });
   mapx = new cv.Mat();
   mapy = new cv.Mat();
   dst = new cv.Mat();
   img_mat = new cv.Mat(480, 960, cv.CV_8UC4);
-  cameralatrix["foresight"] = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    ext_lidar2cam["foresight"]
-  );
-  cameralatrix["right_front"] = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    ext_lidar2cam["right_front"]
-  );
-  cameralatrix["left_front"] = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    ext_lidar2cam["left_front"]
-  );
-  cameralatrix["rearview"] = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    ext_lidar2cam["rearview"]
-  );
-  cameralatrix["left_back"] = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    ext_lidar2cam["left_back"]
-  );
-  cameralatrix["right_back"] = cv.matFromArray(
-    3,
-    3,
-    cv.CV_64F,
-    ext_lidar2cam["right_back"]
-  );
-
-  distCoefis["foresight"] = cv.matFromArray(1, 8, cv.CV_64F, dist["foresight"]);
-  distCoefis["right_front"] = cv.matFromArray(
-    1,
-    8,
-    cv.CV_64F,
-    dist["right_front"]
-  );
-  distCoefis["left_front"] = cv.matFromArray(
-    1,
-    8,
-    cv.CV_64F,
-    dist["left_front"]
-  );
-  distCoefis["rearview"] = cv.matFromArray(1, 8, cv.CV_64F, dist["rearview"]);
-  distCoefis["left_back"] = cv.matFromArray(1, 8, cv.CV_64F, dist["left_back"]);
-  distCoefis["right_back"] = cv.matFromArray(
-    1,
-    8,
-    cv.CV_64F,
-    dist["right_back"]
-  );
-  initCV("foresight");
-  initCV("right_front");
-  initCV("left_front");
-  initCV("rearview");
-  initCV("left_back");
-  initCV("right_back");
-  // console.log("kkkkkkkkkk");
-  cv_status = true;
-  // 在这里执行OpenCV相关的操作
-  // ...
 };
 Module.onRuntimeInitialized = function () {
   postMessage({
@@ -200,7 +136,6 @@ let imageBitmap;
 let num = 0,
   tem = 0,
   old_t = 0;
-
 async function decodeArray(u8Array, key, view) {
   try {
     var ptr = Module._malloc(u8Array.length * u8Array.BYTES_PER_ELEMENT);
@@ -254,9 +189,11 @@ onmessage = function (e) {
     Module._close();
     Module._init(codecId);
     status = true;
+  } else if (e.data.type === "opencv") {
+    initCV(e.data.view);
   } else {
     // if (!status) return;
-    if (!status || !cv_status) return;
+    if (!status || !cv_start) return;
     if (codecId != 173) {
       Module._close();
       Module._init(codecId);
@@ -302,6 +239,8 @@ function matToImageData(mat) {
 }
 
 function initCV(view) {
+  cameralatrix[view] = cv.matFromArray(3, 3, cv.CV_64F, ext_lidar2cam[view]);
+  distCoefis[view] = cv.matFromArray(1, 8, cv.CV_64F, dist[view]);
   cv.initUndistortRectifyMap(
     cameralatrix[view],
     distCoefis[view],
@@ -312,6 +251,7 @@ function initCV(view) {
     mapx,
     mapy
   );
+  cv_start = true;
 }
 
 // ------------------解码

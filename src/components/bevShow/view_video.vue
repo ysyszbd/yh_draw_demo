@@ -64,6 +64,12 @@ function initVideoWork() {
       if (event.data.info == "init") {
         changeCodecId(173);
       }
+      if (event.data.info == "opencv_init") {
+        video_work.postMessage({
+          view: props.video_id,
+          type: "opencv",
+        });
+      }
     } else {
       let message = event.data,
         info = message.info;

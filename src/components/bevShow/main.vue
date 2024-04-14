@@ -139,19 +139,15 @@ videoWorker.postMessage({ sign: "init" });
 // 视频worker
 videoWorker.onmessage = async (e) => {
   // console.log(e.data);
-  // console.log(e.data.key, "e.data.key");
-  // if (mmm.value.size < 300) {
-  //   if (e.data.key >= 1693337505892 && e.data.key <= 1693337538792) {
-  //   mmm.value.set(e.data.key, [
-  //     e.data.bev,
-  //     e.data.objs,
-  //     e.data.bp,
-  //   ]);
-  //   // }
+  // console.log(e.data.key, "e.data.key", mmm.value.size);
+  // if (mmm.value.size < 3000) {
+  //   if (e.data.key >= 1693337749691) {
+  //     mmm.value.set(e.data.key, [e.data.bev, e.data.objs, e.data.bp]);
+  //   }
   // } else {
   //   const obj = Object.fromEntries(mmm.value);
   //   console.log(obj, "obj");
-  //   return;
+  //   // return;
   // }
   // return;
   if (e.data.sign === "video") {
@@ -188,11 +184,9 @@ videoWorker.onmessage = async (e) => {
       return;
     }
     if (video_ok_key.value > 0) {
-      // if (video_ok_key.value > 0 && e.data.key > video_ok_key.value) {
       let k = MemoryPool.keys.find((item) => {
         return item === e.data.key;
       });
-      // console.log(e.data.key, "e.data.key", k);
       if (!k) {
         MemoryPool.keys.push(e.data.key);
         MemoryPool.setInitVideo(e.data.key, e.data.f_buffer, "foresight");
@@ -211,15 +205,13 @@ videoWorker.onmessage = async (e) => {
     }
   }
   if (e.data.sign === "bev") {
-    // let a = await handleObjsPoints(e.data.basic, e.data.objs);
-    // console.log(a, "a");
     MemoryPool.bpMap.set(e.data.key, e.data.bp);
+    MemoryPool.objsMap.set(e.data.key, e.data.objs);
+    MemoryPool.v_o.set(e.data.key, e.data.v_objs);
     // MemoryPool.objs8Map.set(e.data.key, e.data.objs_8);
     // MemoryPool.besicMap.set(e.data.key, e.data.basic);
-    MemoryPool.objsMap.set(e.data.key, e.data.objs);
     // MemoryPool.vObjsMap.set(e.data.key, a);
-    MemoryPool.bevMap.set(e.data.key, e.data.bev);
-    MemoryPool.v_o.set(e.data.key, e.data.v_objs);
+    // MemoryPool.bevMap.set(e.data.key, e.data.bev);
   }
 };
 const props = defineProps(["videoStart"]);
@@ -281,8 +273,8 @@ async function updateVideo() {
     // console.log(MemoryPool.objsMap.size, "objsMap.size");
     let objs = MemoryPool.objsMap.get(key),
       bevs_point = MemoryPool.bpMap.get(key);
-      // basic = MemoryPool.besicMap.get(key),
-      // objs8s = MemoryPool.objs8Map.get(key);
+    // basic = MemoryPool.besicMap.get(key),
+    // objs8s = MemoryPool.objs8Map.get(key);
     // let v_objs = MemoryPool.vObjsMap.get(key);
     let v_o = MemoryPool.v_o.get(key);
     if (MemoryPool.hasVideo(key)) {
@@ -290,63 +282,41 @@ async function updateVideo() {
         await BEV.value.drawBev({
           objs: objs ? objs : null,
           bevs_point: bevs_point ? bevs_point : null,
-          bev: MemoryPool.bevMap.get(key),
         }),
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
           key: key,
-          // objs: v_objs,
           v_o: v_o,
-          // basic: basic,
-          // objs8s: objs8s,
         }),
         await right_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_front"),
           key: key,
-          // objs: v_objs,
           v_o: v_o,
-          // basic: basic,
-          // objs8s: objs8s,
         }),
         await left_front.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_front"),
           key: key,
-          // objs: v_objs,
           v_o: v_o,
-          // basic: basic,
-          // objs8s: objs8s,
         }),
         await rearview.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "rearview"),
           key: key,
-          // objs: v_objs,
           v_o: v_o,
-          // basic: basic,
-          // objs8s: objs8s,
         }),
         await left_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "left_back"),
           key: key,
-          // objs: v_objs,
           v_o: v_o,
-          // basic: basic,
-          // objs8s: objs8s,
         }),
         await right_back.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "right_back"),
           key: key,
-          // objs: v_objs,
           v_o: v_o,
-          // basic: basic,
-          // objs8s: objs8s,
         }),
       ]);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
-      MemoryPool.bevMap.delete(key);
       MemoryPool.bpMap.delete(key);
-      // MemoryPool.besicMap.delete(key);
-      // MemoryPool.vObjsMap.delete(key);
       MemoryPool.objsMap.delete(key);
       MemoryPool.v_o.delete(key);
       MemoryPool.clearMaps(key);

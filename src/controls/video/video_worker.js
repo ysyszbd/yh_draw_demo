@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-13 21:10:27
+ * @LastEditTime: 2024-04-14 16:51:09
  * @Description: 视频相关worker,只负责视频的数据接收
  */
 import { decode } from "@msgpack/msgpack";
@@ -36,17 +36,17 @@ const webSocketInit = (reconnect, webSocketInit) => {
       // console.log(object, "object");
       
       if (object[1].length > 0) {
-        f_buffer = v_uni8.slice(0, object[1][0].length);
+        f_buffer = setBuffer(object[1][0]);
         f_buffer.set(object[1][0]);
-        rf_buffer = v_uni8.slice(0, object[1][1].length);
+        rf_buffer = setBuffer(object[1][1]);
         rf_buffer.set(object[1][1]);
-        lf_buffer = v_uni8.slice(0, object[1][2].length);
+        lf_buffer = setBuffer(object[1][2]);
         lf_buffer.set(object[1][2]);
-        r_buffer = v_uni8.slice(0, object[1][3].length);
+        r_buffer = setBuffer(object[1][3]);
         r_buffer.set(object[1][3]);
-        lb_buffer = v_uni8.slice(0, object[1][4].length);
+        lb_buffer = setBuffer(object[1][4]);
         lb_buffer.set(object[1][4]);
-        rb_buffer = v_uni8.slice(0, object[1][5].length);
+        rb_buffer = setBuffer(object[1][5]);
         rb_buffer.set(object[1][5]);
         postMessage({
           f_buffer,
@@ -66,27 +66,18 @@ const webSocketInit = (reconnect, webSocketInit) => {
         lb_buffer = null;
       }
       if (object[2][1] != 0) {
-        // let objs_8 = await handleV_8(object[4], object[0]);
         // console.log(object, "object");
-        let saf = await handleVO(object[2], object[4], object[0]);
-        // console.log(saf.bev_objs, "saf", object[0]);
-        // console.log(object[4], "object[4]", object[0]);
-        bev_buffer = v_uni8.slice(0, object[3].length);
-        bev_buffer.set(object[3]);
+        let saf = await handleVO(object[2], object[4]);
+        // bev_buffer = setBuffer(object[3]);
+        // bev_buffer.set(object[3]);
         postMessage({
           bp: object[5],
-          bev: bev_buffer,
-          // objs: object[4],
           objs: saf.bev_objs,
           v_objs: saf.v_objs,
           key: object[0],
           sign: "bev",
-          basic: object[2],
-          // objs_8: objs_8,
+          // bev: bev_buffer,
         });
-        // postMessage({
-        //   object
-        // });
       }
     }
   };
@@ -95,21 +86,6 @@ const webSocketInit = (reconnect, webSocketInit) => {
     reconnect(reconnect, webSocketInit);
   };
 };
-function download(filename, text) {
-  const element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-  element.setAttribute('download', filename);
-
-  element.style.display = 'none';
-  document.body.appendChild(element);
-
-  element.click();
-
-  document.body.removeChild(element);
-}
-
-
-
 const reconnect = (reconnect, webSocketInit) => {
     timeConnect++;
     console.log("第" + timeConnect + "次重连");
@@ -117,6 +93,9 @@ const reconnect = (reconnect, webSocketInit) => {
       webSocketInit(reconnect, webSocketInit);
     }, 1000);
 };
+function setBuffer(data) {
+  return v_uni8.slice(0, data.length);
+}
 // 计算点坐标数据
 let view_i = {
     0: "foresight",
@@ -210,7 +189,7 @@ let view_i = {
   empty_arr,
   empty,
   view_a;
-async function handleVO(base, objs, key) {
+async function handleVO(base, objs) {
   try {
     return new Promise(async (resolve, reject) => {
       objs_buffer = [];
@@ -245,7 +224,6 @@ async function handleVO(base, objs, key) {
           left_back: [],
           right_back: [],
         };
-        // obj_buffer = [];
         obj_buffer = v_uni8.slice(0, 99);
         o_buffer = v_uni8.slice(0, objs[j].length);
         o_buffer.set(objs[j]);
@@ -264,7 +242,6 @@ async function handleVO(base, objs, key) {
         });
         v_arr.filter((ele) => {
           if (view_sign[ele.sign] === 8) {
-            // arr.push(...empty);
             view_a[ele.sign].push(...empty);
           } else {
             points_eight.filter((item, index) => {
@@ -291,96 +268,6 @@ async function handleVO(base, objs, key) {
         ovs_buffer.push(o_buffer);
       }
       resolve({v_objs: objs_buffer, bev_objs: ovs_buffer});
-    });
-  } catch (err) {
-    console.log(err, "err---handleVO");
-  }
-}
-async function handleObjsPoints(base, objs) {
-  return new Promise(async (resolve, reject) => {
-    for (i = 0; i < 6; i++) {
-      K[view_i[i]] = base[4][i];
-      ext_lidar2cam[view_i[i]] = base[3][i];
-      D[view_i[i]] = base[8][i];
-      crop[view_i[i]] = base[6][i];
-    }
-    for (j = 0; j < objs.length; j++) {
-      let data = {
-        points_eight: [],
-        foresight: [],
-        rearview: [],
-        right_front: [],
-        right_back: [],
-        left_back: [],
-        left_front: [],
-      };
-
-      data.points_eight = await GetBoundingBoxPoints(
-        ...objs[j].slice(0, 6),
-        objs[j][9]
-      );
-      let view_sign = {
-        foresight: 0,
-        rearview: 0,
-        right_front: 0,
-        right_back: 0,
-        left_back: 0,
-        left_front: 0,
-      };
-      data.points_eight.filter((item) => {
-        for (e0 in view_sign) {
-          let transposeMatrix = ext_lidar2cam[e0];
-          let pt_cam_z_num =
-            item[0] * transposeMatrix[8] +
-            item[1] * transposeMatrix[9] +
-            item[2] * transposeMatrix[10] +
-            transposeMatrix[11];
-          if (pt_cam_z_num < 0.2) {
-            view_sign[e0]++;
-          }
-        }
-      });
-      for (e1 in view_sign) {
-        if (view_sign[e1] === 8) {
-          data[e1] = [];
-        } else {
-          data.points_eight.filter((item) => {
-            data[e1].push(
-              project_lidar2img(
-                item,
-                ext_lidar2cam[e1],
-                K[e1],
-                base[5],
-                crop[e1],
-                D[e1]
-              )
-            );
-          });
-        }
-      }
-      objs[j].push(data);
-    }
-    resolve(objs);
-  });
-}
-let buffer_obj, buffer_objs;
-async function handleV_8(objs) {
-  try {
-    return new Promise(async (resolve, reject) => {
-      buffer_obj = [];
-      buffer_objs = [];
-      for (j = 0; j < objs.length; j++) {
-        points_eight = await GetBoundingBoxPoints(...objs[j].slice(0, 6), objs[j][9]);
-        // console.log(points_eight, "points_eight")
-        buffer_obj = v_uni8.slice(0, 27);
-        buffer_obj.set(points_eight.flat(), 3);
-        buffer_obj.set([objs[j][7]], 0);
-        buffer_obj.set([objs[j][8]], 1);
-        buffer_obj.set([objs[j][12]], 2);
-        // console.log(buffer_obj, "buffer_obj--------");
-        buffer_objs.push(buffer_obj);
-      }
-      resolve(buffer_objs);
     });
   } catch (err) {
     console.log(err, "err---handleVO");
