@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-14 21:39:24
+ * @LastEditTime: 2024-04-15 14:30:29
  * @Description:
  */
 /*
@@ -138,6 +138,7 @@ export default class bevImgContorl {
   bev_context = null;
   bev_imgData;
   points_g = new THREE.Object3D();
+  size_box;
 
   constructor() {
     this.map.set(0, [80, 82, 79, 1]);
@@ -182,6 +183,7 @@ export default class bevImgContorl {
           this.handleLine(data.bevs_point);
           // this.setPoints(data.bevs_point);
         }
+
         if (data.objs) {
           await this.handleObjs(await handleObjs(data.objs));
         }
@@ -247,15 +249,12 @@ export default class bevImgContorl {
   // 绘制可以改变宽度的线条   dashed：true虚线、false实线
   setWidthLine(pointsArr, color = "rgb(80,190,225)") {
     try {
-      // 处理坐标数据
-      let points = this.handlePoints(pointsArr, "line");
-      // console.log(points, "points------------");
       const geometry = this.track(
         new LineGeometry({
           linewidth: 20,
         })
       );
-      geometry.setPositions(points);
+      geometry.setPositions(this.handlePoints(pointsArr, "line"));
       const matLine = this.track(
         new LineMaterial({
           color: color,
@@ -364,7 +363,11 @@ export default class bevImgContorl {
         sign = this.isLineTooShort(pointsArr);
         // console.log(sign, "sign===========");
         if (sign) {
-          pointsArr = [[100, 100], [100, 100], [100, 100]]
+          pointsArr = [
+            [100, 100],
+            [100, 100],
+            [100, 100],
+          ];
         }
         // console.log(pointsArr, "pointsArr------------");
         for (let i = 0; i < points.length; i += 3) {
@@ -422,7 +425,7 @@ export default class bevImgContorl {
         -points[1][1],
         points[1][0]
       );
-      return distance < 8;
+      return distance < 6;
     } else {
       // 对于曲线，计算所有相邻点对之间的距离并求和
       let totalLength = 0;
@@ -520,7 +523,7 @@ export default class bevImgContorl {
   // 操作具体的障碍物
   async handle3D(type, data) {
     try {
-      if (!this.objs.start) return;
+      if (!this.objs.start || !this.objs[type]) return;
       // console.log(data, "data")
       let group = this.objs[`${type}_group`],
         tags = this.objs[`${type}_tags`],
@@ -802,7 +805,7 @@ export default class bevImgContorl {
           const box = this.track(new THREE.Box3().setFromObject(gltf)),
             center = box.getCenter(new THREE.Vector3());
           size = box.getSize(new THREE.Vector3());
-          console.log(size, "size");
+          // console.log(size, "size");
           gltf.position.y = 0;
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
@@ -914,8 +917,8 @@ export default class bevImgContorl {
     }
   }
   ge3Dsize(gltf) {
-    const box = this.track(new THREE.Box3().setFromObject(gltf)),
-      size = box.getSize(new THREE.Vector3());
+    this.size_box = this.track(new THREE.Box3().setFromObject(gltf));
+    size = this.size_box.getSize(new THREE.Vector3());
     return size;
   }
   // 加载3d模型文件

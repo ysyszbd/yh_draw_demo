@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-14 17:07:33
+ * @LastEditTime: 2024-04-15 16:43:00
  * @Description:
  */
 import { construct2DArray } from "@/controls/box2img";
@@ -80,9 +80,17 @@ export default class Video {
       this.helper_dom.height = 480;
     }
     // this.helper_ctx.clearRect(0, 0, w, h);
+    // console.log(data.bg, "data.bg");
     if (data.bg) {
+      // if (this.id === "foresight") {
+      //   console.log(Date.now(), "-------------------0", data.key)
+      // }
+      
       this.helper_ctx.drawImage(data.bg, 0, 0, 960, 480);
       data.bg.close();
+      // if (this.id === "foresight") {
+      //   console.log(Date.now(), "-------------------1", data.key)
+      // }
     }
     if (data.v_o) {
       this.objs_img = await this.drawVideoObjs(data.v_o, this.id, data.key);

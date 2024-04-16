@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-14 16:51:09
+ * @LastEditTime: 2024-04-15 16:52:11
  * @Description: 视频相关worker,只负责视频的数据接收
  */
 import { decode } from "@msgpack/msgpack";
@@ -24,7 +24,7 @@ self.onmessage = async (e) => {
 let mmm = new Map();
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 const webSocketInit = (reconnect, webSocketInit) => {
-  ws = new WebSocket("ws://192.168.1.66:1234");
+  ws = new WebSocket("ws://192.168.1.161:1234");
   ws.binaryType = "arraybuffer";
   ws.onopen = function () {
     timeConnect = 0;
@@ -33,7 +33,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
   ws.onmessage = async (e) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
-      // console.log(object, "object");
+      console.log(object[0], "object");
       
       if (object[1].length > 0) {
         f_buffer = setBuffer(object[1][0]);
@@ -66,17 +66,13 @@ const webSocketInit = (reconnect, webSocketInit) => {
         lb_buffer = null;
       }
       if (object[2][1] != 0) {
-        // console.log(object, "object");
         let saf = await handleVO(object[2], object[4]);
-        // bev_buffer = setBuffer(object[3]);
-        // bev_buffer.set(object[3]);
         postMessage({
           bp: object[5],
           objs: saf.bev_objs,
           v_objs: saf.v_objs,
           key: object[0],
           sign: "bev",
-          // bev: bev_buffer,
         });
       }
     }

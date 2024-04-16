@@ -108,11 +108,7 @@ let foresight = ref(),
       type: "module",
     }
   ),
-  time = ref(),
-  videos_db = ref(null),
-  stop = ref(false),
   video_ok_key = ref(-1),
-  video_start = ref(false),
   video_status_ok = ref({
     foresight: false,
     rearview: false,
@@ -121,14 +117,10 @@ let foresight = ref(),
     left_back: false,
     left_front: false,
   }),
-  v_height = ref(0),
   now_time = ref(formaData(new Date())),
-  monthTime = ref(null),
-  timeChange = ref(null),
   animationFrameId = ref(null),
-  object = null,
   key = null,
-  k = null,
+  k = ref(null),
   startTime = ref(0),
   timerId = ref(null),
   mmm = ref(new Map());
@@ -184,10 +176,10 @@ videoWorker.onmessage = async (e) => {
       return;
     }
     if (video_ok_key.value > 0) {
-      let k = MemoryPool.keys.find((item) => {
+      k.value = MemoryPool.keys.find((item) => {
         return item === e.data.key;
       });
-      if (!k) {
+      if (!k.value) {
         MemoryPool.keys.push(e.data.key);
         MemoryPool.setInitVideo(e.data.key, e.data.f_buffer, "foresight");
         MemoryPool.setInitVideo(e.data.key, e.data.r_buffer, "rearview");
@@ -196,7 +188,7 @@ videoWorker.onmessage = async (e) => {
         MemoryPool.setInitVideo(e.data.key, e.data.lb_buffer, "left_back");
         MemoryPool.setInitVideo(e.data.key, e.data.lf_buffer, "left_front");
       }
-      if (MemoryPool.videosMap["foresight"].size > 0) {
+      if (MemoryPool.videosMap["foresight"].size > 1) {
         await updateVideo();
       }
       animate();
@@ -270,18 +262,25 @@ async function updateVideo() {
   return new Promise(async (resolve, reject) => {
     if (!props.videoStart) videoInit();
     let key = MemoryPool.startK[0];
-    // console.log(MemoryPool.objsMap.size, "objsMap.size");
-    let objs = MemoryPool.objsMap.get(key),
-      bevs_point = MemoryPool.bpMap.get(key);
-    // basic = MemoryPool.besicMap.get(key),
-    // objs8s = MemoryPool.objs8Map.get(key);
-    // let v_objs = MemoryPool.vObjsMap.get(key);
     let v_o = MemoryPool.v_o.get(key);
+    // console.log(
+    //   MemoryPool.hasVideo(key),
+    //   "MemoryPool.hasVideo(key)",
+    //   Date.now(),
+    //   key,
+    //   MemoryPool.startK.length
+    // );
+    console.log(key, "key00000");
     if (MemoryPool.hasVideo(key)) {
+      console.log("1");
       Promise.all([
         await BEV.value.drawBev({
-          objs: objs ? objs : null,
-          bevs_point: bevs_point ? bevs_point : null,
+          objs: MemoryPool.objsMap.has(key)
+            ? MemoryPool.objsMap.get(key)
+            : null,
+          bevs_point: MemoryPool.bpMap.has(key)
+            ? MemoryPool.bpMap.get(key)
+            : null,
         }),
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
@@ -335,7 +334,7 @@ async function updataVideoStatus(message) {
     video_status_ok.value["left_back"] &&
     video_status_ok.value["left_front"]
   ) {
-    MemoryPool.videosMap[message.view].set(message.key, null);
+    // MemoryPool.videosMap[message.view].set(message.key, null);
     MemoryPool.videosMap[message.view].set(message.key, message.info);
   } else {
     video_status_ok.value[message.view] = true;

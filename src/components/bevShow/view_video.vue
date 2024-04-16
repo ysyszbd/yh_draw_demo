@@ -21,21 +21,15 @@ import {
   defineExpose,
   onUnmounted,
   ref,
-  inject,
 } from "vue";
 import VIDEO from "@/controls/video/video.js";
 
 const props = defineProps(["video_id"]);
-const emits = defineEmits(["updataVideoStatus", "handleVideoInit"]);
-let yh_video = ref(null);
-let video_start = ref(false);
-let video_work = new Worker(
+const emits = defineEmits(["updataVideoStatus"]);
+let yh_video = ref(null),
+  video_work = new Worker(
   new URL("../../controls/video/ffmpeg_decode.js", import.meta.url).href
 );
-let key = ref(null);
-let bg = ref(null);
-const MemoryPool = inject("MemoryPool");
-const videoInit = inject("videoInit");
 onMounted(() => {
   yh_video.value = new VIDEO(props.video_id);
   initVideoWork();
@@ -49,12 +43,11 @@ function drawVideo(data) {
 function postVideo(u8Array, key, view) {
   return new Promise((resolve, reject) => {
     if (view != props.video_id) return;
-    let params = {
+    video_work.postMessage({
       video_data: u8Array,
       view: props.video_id,
       key: key,
-    };
-    video_work.postMessage(params);
+    });
     resolve(`通知${view}解码~`);
   });
 }
@@ -88,12 +81,11 @@ function clearVideo() {
   // video_work = null;
 }
 function changeCodecId(val) {
-  let data = {
+  video_work.postMessage({
     type: "updateCodecId",
     info: val,
     id: props.video_id,
-  };
-  video_work.postMessage(data);
+  });
 }
 defineExpose({
   postVideo,

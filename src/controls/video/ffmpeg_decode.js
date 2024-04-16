@@ -117,6 +117,7 @@ cv["onRuntimeInitialized"] = () => {
     type: "message",
     info: "opencv_init",
   });
+  // console.log(cv, "cv");
   mapx = new cv.Mat();
   mapy = new cv.Mat();
   dst = new cv.Mat();
@@ -136,49 +137,68 @@ let imageBitmap;
 let num = 0,
   tem = 0,
   old_t = 0;
+let d_num = 0,
+  d_tem = 0,
+  d_old_t = 0;
+let ptr, outputPtr, rgbData, rgbObj;
 async function decodeArray(u8Array, key, view) {
   try {
-    var ptr = Module._malloc(u8Array.length * u8Array.BYTES_PER_ELEMENT);
+    if (view === "foresight") {
+      old_t = Date.now();
+    }
+    ptr = Module._malloc(u8Array.length * u8Array.BYTES_PER_ELEMENT);
     Module.HEAPU8.set(u8Array, ptr);
     Module._parsePkt(ptr, u8Array.length);
-    Module._parsePkt(ptr, u8Array.length);
-    let outputPtr = Module._getFrame();
+    // Module._parsePkt(ptr, u8Array.length);
+    outputPtr = Module._getFrame();
     Module._free(ptr);
     ptr = null;
     if (outputPtr === 0) return;
 
-    var rgbData = new Uint8ClampedArray(
+    rgbData = new Uint8ClampedArray(
       Module.HEAPU8.subarray(
         outputPtr,
         outputPtr + Module._getWidth() * Module._getHeight() * 4
       )
     );
-    // if (view === "foresight") {
-    //   // console.log(Date.now(), "1111", key);
-    //   tem = tem + (Date.now() - old_t);
-    //   num++;
-    //   if (num > 50) {
-    //     // console.log(tem / num, "pppppppppp");
-    //   }
-    // }
-    let rgbObj = {
+    rgbObj = {
       width: Module._getWidth(),
       height: Module._getHeight(),
       rgb: rgbData,
     };
-
+    // if (view === "foresight") {
+    //   if (num <= 50) {
+    //     tem = Date.now() - old_t + tem;
+    //     num++;
+    //   } else {
+    //     // console.error(tem / 50, "pppppppppppppppp");
+    //   }
+    //   d_old_t = Date.now();
+    // }
+    // let a = 
+    // imageBitmap = await drawVideoBg(cv.remap(img_mat.data.set(rgbData), dst, mapx, mapy, cv.INTER_NEAREST), key, view);
     imageBitmap = await drawVideoBg(rgbObj, key, view);
+    // if (view === "foresight") {
+    //   if (d_num <= 50) {
+    //     d_tem = Date.now() - d_old_t + d_tem;
+    //     d_num++;
+    //   } else {
+    //     console.error(d_tem / 50, "88888888888");
+    //   }
+    // }
     // if (view === "foresight") {
     //   console.log(Date.now(), "2222", key);
     // }
-    let message = {
-      type: "image",
-      // info: rgbObj,
-      info: imageBitmap,
-      key: key,
-      view: view,
-    };
-    postMessage(message, [imageBitmap]);
+    postMessage(
+      {
+        type: "image",
+        // info: rgbObj,
+        info: imageBitmap,
+        key: key,
+        view: view,
+      },
+      [imageBitmap]
+    );
   } catch (err) {
     console.log(err, "er====decodeArray");
   }
@@ -215,9 +235,10 @@ function drawVideoBg(info, key, view) {
       imgData.data[i + 0] = imgData.data[i + 2];
       imgData.data[i + 2] = data0;
     }
+    // v_context.putImageData(imgData, 0, 0);
     src = imageDataToMat(imgData);
-    cv.remap(src, dst, mapx, mapy, cv.INTER_NEAREST);
-    // // // 进行畸变校正
+    cv.remap(src, dst, mapx, mapy, cv.INTER_NEAREST, cv.BORDER_CONSTANT);
+    // // 进行畸变校正
     v_context.putImageData(matToImageData(dst), 0, 0);
     v_context.fillStyle = "white";
     v_context.fillRect(10, 0, 180, 30);
@@ -247,7 +268,7 @@ function initCV(view) {
     new cv.Mat(),
     cameralatrix[view],
     { width: 960, height: 480 },
-    cv.CV_32FC1,
+    cv.CV_16SC2,
     mapx,
     mapy
   );
