@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-15 16:52:11
+ * @LastEditTime: 2024-04-17 16:43:15
  * @Description: 视频相关worker,只负责视频的数据接收
  */
 import { decode } from "@msgpack/msgpack";
@@ -21,10 +21,11 @@ self.onmessage = async (e) => {
     webSocketInit(reconnect, webSocketInit);
   }
 };
-let mmm = new Map();
+let saf;
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
+let old;
 const webSocketInit = (reconnect, webSocketInit) => {
-  ws = new WebSocket("ws://192.168.1.161:1234");
+  ws = new WebSocket("ws://192.168.1.66:1234");
   ws.binaryType = "arraybuffer";
   ws.onopen = function () {
     timeConnect = 0;
@@ -33,9 +34,15 @@ const webSocketInit = (reconnect, webSocketInit) => {
   ws.onmessage = async (e) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
-      console.log(object[0], "object");
-      
       if (object[1].length > 0) {
+        // if (!old) {
+        //   old = Date.now();
+        // } else {
+        //   console.log(Date.now() - old, "ppppppp");
+        //   old = Date.now();
+        // }
+        // console.log(object[0], "object", Date.now());
+        // return
         f_buffer = setBuffer(object[1][0]);
         f_buffer.set(object[1][0]);
         rf_buffer = setBuffer(object[1][1]);
@@ -48,16 +55,18 @@ const webSocketInit = (reconnect, webSocketInit) => {
         lb_buffer.set(object[1][4]);
         rb_buffer = setBuffer(object[1][5]);
         rb_buffer.set(object[1][5]);
-        postMessage({
-          f_buffer,
-          r_buffer,
-          rf_buffer,
-          rb_buffer,
-          lf_buffer,
-          lb_buffer,
-          key: object[0],
-          sign: "video",
-        });
+        postMessage(
+          {
+            f_buffer,
+            r_buffer,
+            rf_buffer,
+            rb_buffer,
+            lf_buffer,
+            lb_buffer,
+            key: object[0],
+            sign: "video",
+          }, []
+        );
         f_buffer = null;
         r_buffer = null;
         rf_buffer = null;
@@ -66,7 +75,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
         lb_buffer = null;
       }
       if (object[2][1] != 0) {
-        let saf = await handleVO(object[2], object[4]);
+        saf = await handleVO(object[2], object[4]);
         postMessage({
           bp: object[5],
           objs: saf.bev_objs,
@@ -83,11 +92,11 @@ const webSocketInit = (reconnect, webSocketInit) => {
   };
 };
 const reconnect = (reconnect, webSocketInit) => {
-    timeConnect++;
-    console.log("第" + timeConnect + "次重连");
-    setTimeout(function () {
-      webSocketInit(reconnect, webSocketInit);
-    }, 1000);
+  timeConnect++;
+  console.log("第" + timeConnect + "次重连");
+  setTimeout(function () {
+    webSocketInit(reconnect, webSocketInit);
+  }, 1000);
 };
 function setBuffer(data) {
   return v_uni8.slice(0, data.length);
@@ -200,10 +209,13 @@ async function handleVO(base, objs) {
           [-1, -1],
           [-1, -1],
           [-1, -1],
-          [-1, -1]
+          [-1, -1],
         ];
         arr = [];
-        points_eight = await GetBoundingBoxPoints(...objs[j].slice(0, 6), objs[j][9]);
+        points_eight = await GetBoundingBoxPoints(
+          ...objs[j].slice(0, 6),
+          objs[j][9]
+        );
         view_sign = {
           foresight: 0,
           right_front: 0,
@@ -247,8 +259,7 @@ async function handleVO(base, objs) {
                 base[4][ele.v_index],
                 base[5],
                 base[6][ele.v_index],
-                base[8][ele.v_index],
-
+                base[8][ele.v_index]
               );
               view_a[ele.sign].push(a);
             });
@@ -263,7 +274,7 @@ async function handleVO(base, objs) {
         objs_buffer.push(obj_buffer);
         ovs_buffer.push(o_buffer);
       }
-      resolve({v_objs: objs_buffer, bev_objs: ovs_buffer});
+      resolve({ v_objs: objs_buffer, bev_objs: ovs_buffer });
     });
   } catch (err) {
     console.log(err, "err---handleVO");
@@ -291,7 +302,6 @@ let pt_cam_x,
   x_d,
   y_d;
 function project_lidar2img(pts, ext_lidar2cam, K, scale, crop, D) {
-  
   pt_cam_x =
     pts[0] * ext_lidar2cam[0] +
     pts[1] * ext_lidar2cam[1] +

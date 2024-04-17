@@ -28,6 +28,7 @@ export default class MemoryPool {
     this.vObjsMap = new Map(); // 视频的障碍物数据
     this.v_o = new Map();
     this.bevMap = new Map();
+    this.bevPointsMap = new Map();
     this.bpMap = new Map();
     this.besicMap = new Map();
   }

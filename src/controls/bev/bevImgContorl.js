@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-15 14:30:29
+ * @LastEditTime: 2024-04-17 17:50:32
  * @Description:
  */
 /*
@@ -15,7 +15,12 @@ import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import skyVertexShader from "@/assets/shader/skyVertexShader.vs?raw";
 import skyFragmentShader from "@/assets/shader/skyFragmentShader.fs?raw";
 import roadFragmentShader from "@/assets/shader/roadFragmentShader.fs?raw";
-import { handleObjs } from "@/controls/box2img.js";
+import {
+  handleObjs,
+  isLine,
+  isLineTooShort,
+  handleBevPoints,
+} from "@/controls/box2img.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
@@ -123,9 +128,9 @@ export default class bevImgContorl {
   mesh = null;
   mapBg = null;
   lineColors = {
-    1: "rgba(0, 255, 255, 1)",
-    2: "rgba(128, 255, 128, 1)",
-    3: "rgba(192, 71, 70, 1)",
+    1: "rgba(247, 170, 30, 1)",
+    2: "rgba(45, 250, 170, 1)",
+    3: "rgba(0, 212, 219, 1)",
   };
   line_data = null;
   handler = {
@@ -139,6 +144,25 @@ export default class bevImgContorl {
   bev_imgData;
   points_g = new THREE.Object3D();
   size_box;
+  bev_line = [];
+  bev_lines = [];
+  points;
+  sort_arr = [
+    [100, 100],
+    [100, 100],
+  ];
+  data0 = {
+    time: new Map(),
+    num: 0,
+    tem: 0,
+    key: null,
+  };
+  data1 = {
+    time: new Map(),
+    num: 0,
+    tem: 0,
+    key: null,
+  };
 
   constructor() {
     this.map.set(0, [80, 82, 79, 1]);
@@ -164,34 +188,51 @@ export default class bevImgContorl {
       this.scene.remove(this.road);
     }
     this.resTracker.dispose();
-    this.road = null;
+    // this.road = null;
   }
   // 更新bev
   async getData(data) {
     try {
-      // console.log(data, "data]]]");
       return new Promise(async (resolve, reject) => {
-        // if (data.bev) {
-        //   this.bev_imgData = await this.drawBev(data.bev);
-        //   // console.log(this.bev_imgData, "this.bev_imgData");
-        //   this.bev.ctx.drawImage(this.bev_imgData, 0, 0);
-        //   this.bev_imgData.close();
-        //   this.bev_imgData = null;
-        //   this.mapBg.needsUpdate = true;
+        // if (data.bevs_point) {
+        //   // this.setPoints(data.bevs_point);
+        //   await this.handleLine(await this.handleBevLines(data.bevs_point));
         // }
-        if (data.bevs_point) {
-          this.handleLine(data.bevs_point);
-          // this.setPoints(data.bevs_point);
-        }
 
-        if (data.objs) {
-          await this.handleObjs(await handleObjs(data.objs));
-        }
+        // if (data.objs) {
+        //   await this.handleObjs(await handleObjs(data.objs));
+        // }
         resolve("ppp");
       });
     } catch (err) {
       console.log(err, "err---getData");
     }
+  }
+  // 处理bev线条数据--直线与曲线分开处理，去掉过短的线条
+  handleBevLines(data) {
+    return new Promise(async (resolve, reject) => {
+      this.bev_lines = [];
+      let arr
+      data.forEach(async (item, index) => {
+        this.points = new Float32Array(200 * 3);
+        if (isLine(item[1])) {
+          arr = [item[1][0], item[1][item[1].length - 1]];
+          let sign = isLineTooShort(arr);
+          if (sign) {
+            arr = this.sort_arr;
+          }
+          this.bev_lines.push([item[0], handleBevPoints(this.points, arr)]);
+        } else {
+          let sign = isLineTooShort(item[1]);
+          arr = item[1];
+          if (sign) {
+            arr = this.sort_arr;
+          }
+          this.bev_lines.push([item[0], handleBevPoints(this.points, arr)]);
+        }
+      });
+      resolve(this.bev_lines);
+    });
   }
   drawBev(bev) {
     return new Promise((resolve, reject) => {
@@ -246,32 +287,6 @@ export default class bevImgContorl {
       console.log(err, "err---setMeshRoad");
     }
   }
-  // 绘制可以改变宽度的线条   dashed：true虚线、false实线
-  setWidthLine(pointsArr, color = "rgb(80,190,225)") {
-    try {
-      const geometry = this.track(
-        new LineGeometry({
-          linewidth: 20,
-        })
-      );
-      geometry.setPositions(this.handlePoints(pointsArr, "line"));
-      const matLine = this.track(
-        new LineMaterial({
-          color: color,
-          linewidth: 2,
-          dashed: false,
-          vertexColors: false,
-        })
-      );
-
-      matLine.resolution.set(this.dom_width, this.dom_height);
-      let line = this.track(new Line2(geometry, matLine));
-      line.computeLineDistances();
-      return line;
-    } catch (err) {
-      console.log(err, "err---setWidthLine");
-    }
-  }
   initPoints() {
     this.pointsGeometry = new THREE.BufferGeometry();
     this.pointsMaterial = new THREE.PointsMaterial({
@@ -319,7 +334,7 @@ export default class bevImgContorl {
     }
   }
   // 处理带宽度的线条坐标数据
-  handlePoints(pointsArr, sign = "line") {
+  handlePoints(pointsArr, sign = "points") {
     // console.log(pointsArr, "pointsArr");
     // 处理坐标数据
     const points = new Float32Array(200 * 3);
@@ -338,54 +353,6 @@ export default class bevImgContorl {
       }
       return points;
     }
-    if (sign === "line") {
-      let sign;
-      if (this.isLine(pointsArr)) {
-        let arr = [pointsArr[0], pointsArr[pointsArr.length - 1]];
-        sign = this.isLineTooShort(arr);
-        if (sign) {
-          arr = [
-            [0, 0],
-            [0, 0],
-          ];
-        }
-        // console.log(arr, "arr");
-        points[0] = -arr[0][1];
-        points[1] = arr[0][0];
-        points[2] = 0;
-        for (let i = 3; i < points.length; i += 3) {
-          points[i + 0] = -arr[arr.length - 1][1];
-          points[i + 1] = arr[arr.length - 1][0];
-          points[i + 2] = 0;
-        }
-        return points;
-      } else {
-        sign = this.isLineTooShort(pointsArr);
-        // console.log(sign, "sign===========");
-        if (sign) {
-          pointsArr = [
-            [100, 100],
-            [100, 100],
-            [100, 100],
-          ];
-        }
-        // console.log(pointsArr, "pointsArr------------");
-        for (let i = 0; i < points.length; i += 3) {
-          this.line_data = pointsArr[i * 5];
-          if (this.line_data) {
-            points[i + 0] = -this.line_data[1];
-            points[i + 1] = this.line_data[0];
-            points[i + 2] = 0;
-          } else {
-            points[i + 0] = -pointsArr[pointsArr.length - 1][1];
-            points[i + 1] = pointsArr[pointsArr.length - 1][0];
-            points[i + 2] = 0;
-          }
-        }
-        // console.log(points, "points=======");
-        return points;
-      }
-    }
   }
   // 更新障碍物
   async handleObjs(objs_data) {
@@ -397,127 +364,104 @@ export default class bevImgContorl {
       resolve("---------");
     });
   }
-  // 判断是直线还是曲线
-  isLine(points, threshold = 0.9) {
-    // console.log(points, "points");
-    const start = points[0];
-    const end = points[points.length - 1];
-    const slope = (end[0] - start[0]) / (-end[1] + start[1]);
-    const intercept = start[0] - slope * -start[1];
 
-    for (let i = 1; i < points.length - 1; i++) {
-      const point = points[i];
-      const distance =
-        Math.abs(slope * -point[1] - point[0] + intercept) /
-        Math.sqrt(slope * slope + 1);
-      if (distance > threshold) {
-        return false; // 曲线
-      }
-    }
-    return true; // 直线
-  }
-  // 判断线条是否短--直线只需要两个点
-  isLineTooShort(points, threshold = 6) {
-    if (points.length === 2) {
-      const distance = this.calculateDistance(
-        -points[0][1],
-        points[0][0],
-        -points[1][1],
-        points[1][0]
-      );
-      return distance < 6;
-    } else {
-      // 对于曲线，计算所有相邻点对之间的距离并求和
-      let totalLength = 0;
-      for (let i = 1; i < points.length; i++) {
-        totalLength += this.calculateDistance(
-          -points[i - 1][1],
-          points[i - 1][0],
-          -points[i][1],
-          points[i][0]
-        );
-      }
-      // console.log(totalLength, "totalLength");
-      return totalLength < 9;
-    }
-  }
-  // 计算两点之间的距离（直线长度）
-  calculateDistance(x1, y1, x2, y2) {
-    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-  }
-
-  async handleLine(bevs_point) {
-    if (this.lines.group.children.length <= 0) {
-      bevs_point.forEach((item) => {
-        this.lines.group.add(
-          this.setWidthLine(item[1], this.lineColors[item[0]])
-        );
-      });
-      this.scene.add(this.lines.group);
-    } else {
-      if (this.lines.group.children.length > 50) {
-        console.log("大于50---lines");
-        for (let j = 50; j < this.lines.group.children.length; j++) {
-          this.scene.remove(this.lines.group.children[j]);
-          this.lines.group.children[j].geometry.dispose();
-          this.lines.group.children[j].material.dispose();
-          this.lines.group.remove(this.lines.group.children[j]);
-        }
-      }
-
-      if (this.lines.group.children.length >= bevs_point.length) {
-        // console.log("llllll");
-        for (let i = 0; i < bevs_point.length; i++) {
-          this.lines.group.children[i].geometry.setPositions(
-            this.handlePoints(bevs_point[i][1], "line")
-          );
-          this.lines.group.children[
-            i
-          ].geometry.attributes.position.needsUpdate = true;
-          this.lines.group.children[i].material.color.set(
-            this.lineColors[bevs_point[i][0]]
-          );
-          this.lines.group.children[i].material.needsUpdate = true;
-        }
-        for (
-          let j = bevs_point.length;
-          j < this.lines.group.children.length;
-          j++
-        ) {
-          this.lines.group.children[j].geometry.setPositions([
-            100, 100, 0, 100, 100, 0,
-          ]);
-          this.lines.group.children[
-            j
-          ].geometry.attributes.position.needsUpdate = true;
-        }
-      } else {
-        for (let i = 0; i < this.lines.group.children.length; i++) {
-          this.lines.group.children[i].geometry.setPositions(
-            this.handlePoints(bevs_point[i][1], "line")
-          );
-          this.lines.group.children[
-            i
-          ].geometry.attributes.position.needsUpdate = true;
-          this.lines.group.children[i].material.color.set(
-            this.lineColors[bevs_point[i][0]]
-          );
-          this.lines.group.children[i].material.needsUpdate = true;
-        }
-        for (
-          let j = this.lines.group.children.length;
-          j < bevs_point.length;
-          j++
-        ) {
+  async handleLine(bev_points) {
+    return new Promise((resolve, reject) => {
+      if (this.lines.group.children.length <= 0) {
+        bev_points.forEach((item) => {
           this.lines.group.add(
-            this.setWidthLine(
-              bevs_point[j][1],
-              this.lineColors[bevs_point[j][0]]
-            )
+            this.setWidthLine(item[1], this.lineColors[item[0]])
           );
-        }
+        });
         this.scene.add(this.lines.group);
+      } else {
+        if (this.lines.group.children.length > 50) {
+          console.log("大于50---lines");
+          for (let j = 50; j < this.lines.group.children.length; j++) {
+            this.scene.remove(this.lines.group.children[j]);
+            this.lines.group.children[j].geometry.dispose();
+            this.lines.group.children[j].material.dispose();
+            this.lines.group.remove(this.lines.group.children[j]);
+          }
+        }
+  
+        if (this.lines.group.children.length >= bev_points.length) {
+          // console.log("llllll");
+          for (let i = 0; i < bev_points.length; i++) {
+            this.lines.group.children[i].geometry.setPositions(bev_points[i][1]);
+            this.lines.group.children[
+              i
+            ].geometry.attributes.position.needsUpdate = true;
+            this.lines.group.children[i].material.color.set(
+              this.lineColors[bev_points[i][0]]
+            );
+            this.lines.group.children[i].material.needsUpdate = true;
+          }
+          for (
+            let j = bev_points.length;
+            j < this.lines.group.children.length;
+            j++
+          ) {
+            this.lines.group.children[j].geometry.setPositions([
+              100, 100, 0, 100, 100, 0,
+            ]);
+            this.lines.group.children[
+              j
+            ].geometry.attributes.position.needsUpdate = true;
+          }
+        } else {
+          for (let i = 0; i < this.lines.group.children.length; i++) {
+            this.lines.group.children[i].geometry.setPositions(bev_points[i][1]);
+            this.lines.group.children[
+              i
+            ].geometry.attributes.position.needsUpdate = true;
+            this.lines.group.children[i].material.color.set(
+              this.lineColors[bev_points[i][0]]
+            );
+            this.lines.group.children[i].material.needsUpdate = true;
+          }
+          for (
+            let j = this.lines.group.children.length;
+            j < bev_points.length;
+            j++
+          ) {
+            this.lines.group.add(
+              this.setWidthLine(
+                bev_points[j][1],
+                this.lineColors[bev_points[j][0]]
+              )
+            );
+          }
+          this.scene.add(this.lines.group);
+        }
       }
+      resolve("线条更新完毕")
+    })
+  }
+  // 绘制可以改变宽度的线条   dashed：true虚线、false实线
+  setWidthLine(pointsArr, color = "rgb(80,190,225)") {
+    try {
+      const geometry = this.track(
+        new LineGeometry({
+          linewidth: 20,
+        })
+      );
+      geometry.setPositions(pointsArr);
+      const matLine = this.track(
+        new LineMaterial({
+          color: color,
+          linewidth: 2,
+          dashed: false,
+          vertexColors: false,
+        })
+      );
+
+      matLine.resolution.set(this.dom_width, this.dom_height);
+      let line = this.track(new Line2(geometry, matLine));
+      line.computeLineDistances();
+      return line;
+    } catch (err) {
+      console.log(err, "err---setWidthLine");
     }
   }
   // 操作具体的障碍物
@@ -565,7 +509,7 @@ export default class bevImgContorl {
             this.handler.pos3.y -= 16;
             this.handler.label3DSprite.position.copy(this.handler.pos3);
             tags.add(this.handler.label3DSprite);
-            this.handler.label3DSprite = null;
+            // this.handler.label3DSprite = null;
             this.handler.pos3 = new THREE.Vector3();
           }
         }
@@ -628,7 +572,7 @@ export default class bevImgContorl {
             this.handler.label3DSprite.position.copy(this.handler.pos3);
             tags.add(this.handler.label3DSprite);
             this.handler.pos3 = new THREE.Vector3();
-            this.handler.label3DSprite = null;
+            // this.handler.label3DSprite = null;
           }
           this.scene.add(group);
           this.scene.add(tags);
@@ -918,8 +862,7 @@ export default class bevImgContorl {
   }
   ge3Dsize(gltf) {
     this.size_box = this.track(new THREE.Box3().setFromObject(gltf));
-    size = this.size_box.getSize(new THREE.Vector3());
-    return size;
+    return this.size_box.getSize(new THREE.Vector3());
   }
   // 加载3d模型文件
   loadFile(url) {

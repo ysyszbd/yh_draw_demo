@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-15 16:43:00
+ * @LastEditTime: 2024-04-17 18:07:41
  * @Description:
  */
 import { construct2DArray } from "@/controls/box2img";
@@ -25,7 +25,7 @@ export default class Video {
   v_objs_canvas0 = new OffscreenCanvas(960, 480);
   v_objs_cxt0 = this.v_objs_canvas0.getContext("2d");
   box_color = {
-    "0-0": "rgb(255, 0, 128)",
+    "0-0": "rgb(1, 121, 254)",
     "1-0": "rgb(0, 128, 255)",
     "1-1": "rgb(0,  255,  255)",
     "2-0": "rgb(150,  30, 150)",
@@ -74,30 +74,35 @@ export default class Video {
     this.id = id;
   }
   async drawVideo(data) {
-    // 使用canvas外部的元素来控制canvas的大小
-    if (this.helper_dom.width != 960 || this.helper_dom.height != 480) {
-      this.helper_dom.width = 960;
-      this.helper_dom.height = 480;
-    }
-    // this.helper_ctx.clearRect(0, 0, w, h);
-    // console.log(data.bg, "data.bg");
-    if (data.bg) {
-      // if (this.id === "foresight") {
-      //   console.log(Date.now(), "-------------------0", data.key)
-      // }
-      
-      this.helper_ctx.drawImage(data.bg, 0, 0, 960, 480);
-      data.bg.close();
-      // if (this.id === "foresight") {
-      //   console.log(Date.now(), "-------------------1", data.key)
-      // }
-    }
-    if (data.v_o) {
-      this.objs_img = await this.drawVideoObjs(data.v_o, this.id, data.key);
+    return new Promise(async (resolve, reject) => {
+      // 使用canvas外部的元素来控制canvas的大小
+      if (this.helper_dom.width != 960 || this.helper_dom.height != 480) {
+        this.helper_dom.width = 960;
+        this.helper_dom.height = 480;
+      }
+      if (data.bg) {
+        await this.drawBG(data.bg);
+      }
+      if (data.v_o) {
+        await this.drawObjs(data.v_o, data.key);
+      }
+      resolve("")
+    })
+  }
+  drawBG(bg) {
+    return new Promise((resolve, reject) => {
+      this.helper_ctx.drawImage(bg, 0, 0, 960, 480);
+      bg.close();
+      resolve("视频渲染完毕");
+    });
+  }
+  async drawObjs(objs, key) {
+    return new Promise(async (resolve, reject) => {
+      this.objs_img = await this.drawVideoObjs(objs, this.id, key);
       this.helper_ctx.drawImage(this.objs_img, 0, 0, 960, 480);
       this.objs_img.close();
-      this.objs_img = null;
-    }
+      resolve("障碍物渲染完毕")
+    });
   }
   // 各view渲染障碍物
   drawVideoObjs(objs, view, key) {

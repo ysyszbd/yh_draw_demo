@@ -1,5 +1,5 @@
 <!--
- * @LastEditTime: 2024-04-07 15:16:30
+ * @LastEditTime: 2024-04-17 17:27:23
  * @Description: 
 -->
 <template>
@@ -28,8 +28,11 @@ const props = defineProps(["video_id"]);
 const emits = defineEmits(["updataVideoStatus"]);
 let yh_video = ref(null),
   video_work = new Worker(
-  new URL("../../controls/video/ffmpeg_decode.js", import.meta.url).href
-);
+    new URL("../../controls/video/ffmpeg_decode.js", import.meta.url),
+    {
+      type: "module",
+    }
+  );
 onMounted(() => {
   yh_video.value = new VIDEO(props.video_id);
   initVideoWork();
@@ -75,7 +78,7 @@ function initVideoWork() {
 }
 // 清除视频占用内存
 function clearVideo() {
-  yh_video.value.clear();
+  // yh_video.value.clear();
   // yh_video.value = null;
   video_work.terminate();
   // video_work = null;
@@ -93,6 +96,10 @@ defineExpose({
 });
 onUnmounted(() => {
   clearVideo();
+  video_work.postMessage({
+    view: props.video_id,
+    type: "clear",
+  });
   video_work.terminate();
 });
 </script>

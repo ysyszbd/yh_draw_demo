@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-13 18:53:44
+ * @LastEditTime: 2024-04-16 18:56:22
  * @Description:
  */
 
@@ -314,15 +314,19 @@ export function handleObjs(objs_data) {
   });
 }
 export function formaData(timer) {
-  const year = timer.getFullYear();
-  const month = timer.getMonth() + 1; // 由于月份从0开始，因此需加1
-  const day = timer.getDate();
-  const hour = timer.getHours();
-  const minute = timer.getMinutes();
-  const second = timer.getSeconds();
-  return `${pad(year, 4)}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(
-    minute
-  )}:${pad(second)}`;
+  return new Promise((resolve, reject) => {
+    const year = timer.getFullYear();
+    const month = timer.getMonth() + 1; // 由于月份从0开始，因此需加1
+    const day = timer.getDate();
+    const hour = timer.getHours();
+    const minute = timer.getMinutes();
+    const second = timer.getSeconds();
+    resolve(
+      `${pad(year, 4)}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(
+        minute
+      )}:${pad(second)}`
+    );
+  });
 }
 export function pad(timeEl, total = 2, str = "0") {
   return timeEl.toString().padStart(total, str);
@@ -446,3 +450,68 @@ export let distCoefis = {
     2.8630518913269043, 0.8628029823303223,
   ],
 };
+let start, end, slope, intercept, point, distance;
+// 判断是直线还是曲线
+export function isLine(points, threshold = 0.9) {
+  start = points[0];
+  end = points[points.length - 1];
+  slope = (end[0] - start[0]) / (-end[1] + start[1]);
+  intercept = start[0] - slope * -start[1];
+
+  for (let i = 1; i < points.length - 1; i++) {
+    point = points[i];
+    distance =
+      Math.abs(slope * -point[1] - point[0] + intercept) /
+      Math.sqrt(slope * slope + 1);
+    if (distance > threshold) {
+      return false; // 曲线
+    }
+  }
+  return true; // 直线
+}
+let short_distance, totalLength;
+// 判断线条是否短--直线只需要两个点
+export function isLineTooShort(points, threshold = 6) {
+  if (points.length === 2) {
+    short_distance = calculateDistance(
+      -points[0][1],
+      points[0][0],
+      -points[1][1],
+      points[1][0]
+    );
+    return short_distance < 6;
+  } else {
+    // 对于曲线，计算所有相邻点对之间的距离并求和
+    totalLength = 0;
+    for (let i = 1; i < points.length; i++) {
+      totalLength += calculateDistance(
+        -points[i - 1][1],
+        points[i - 1][0],
+        -points[i][1],
+        points[i][0]
+      );
+    }
+    return totalLength < 9;
+  }
+}
+// 计算两点之间的距离（直线长度）
+export function calculateDistance(x1, y1, x2, y2) {
+  return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+// 处理bev矢量坐标数据，集合成threejs可以直接使用的坐标
+let point0;
+export function handleBevPoints(points, arr) {
+  for (let i = 0; i < points.length; i += 3) {
+    point0 = arr[i * 5];
+    if (point0) {
+      points[i + 0] = -point0[1];
+      points[i + 1] = point0[0];
+      points[i + 2] = 0;
+    } else {
+      points[i + 0] = -arr[arr.length - 1][1];
+      points[i + 1] = arr[arr.length - 1][0];
+      points[i + 2] = 0;
+    }
+  }
+  return points;
+}

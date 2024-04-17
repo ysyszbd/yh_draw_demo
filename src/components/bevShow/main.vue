@@ -3,7 +3,7 @@
     <div class="page_title">
       <div class="title_box title_time">{{ now_time }}</div>
       <div class="title_text">
-        <div class="big">易航智能-丹灵®BEV感知</div>
+        <div class="big">易航智能-灵眸®BEV感知</div>
         <div class="little">W W W . Y I H A N G . A I</div>
       </div>
       <div class="title_box title_logo">
@@ -123,7 +123,12 @@ let foresight = ref(),
   k = ref(null),
   startTime = ref(0),
   timerId = ref(null),
-  mmm = ref(new Map());
+  mmm = ref(new Map()),
+  lastUpdateTime = ref(0),
+  updateInterval = ref(10),
+  updateNum = ref(50),
+  lastTime = ref(0),
+  last = ref(0);
 provide("MemoryPool", MemoryPool);
 const videoInit = inject("videoInit");
 // console.log(cv.initUndistortRectifyMap(), "-------------");
@@ -188,15 +193,16 @@ videoWorker.onmessage = async (e) => {
         MemoryPool.setInitVideo(e.data.key, e.data.lb_buffer, "left_back");
         MemoryPool.setInitVideo(e.data.key, e.data.lf_buffer, "left_front");
       }
-      if (MemoryPool.videosMap["foresight"].size > 1) {
+      if (MemoryPool.videosMap["foresight"].size > 0) {
+        console.log(e.data.key, "e.data.key", Date.now());
         await updateVideo();
       }
-      animate();
     } else {
       console.error("时间戳", e.data.key, video_ok_key.value);
     }
   }
   if (e.data.sign === "bev") {
+    // console.log(Date.now(), "2222", e.data.key);
     MemoryPool.bpMap.set(e.data.key, e.data.bp);
     MemoryPool.objsMap.set(e.data.key, e.data.objs);
     MemoryPool.v_o.set(e.data.key, e.data.v_objs);
@@ -204,56 +210,68 @@ videoWorker.onmessage = async (e) => {
     // MemoryPool.besicMap.set(e.data.key, e.data.basic);
     // MemoryPool.vObjsMap.set(e.data.key, a);
     // MemoryPool.bevMap.set(e.data.key, e.data.bev);
+    // animate();
   }
 };
 const props = defineProps(["videoStart"]);
-
-animate();
-async function animate() {
-  now_time.value = formaData(new Date());
-  // console.log("animate", Date.now());
-  // console.log(MemoryPool.keys.length, "-------keys.length");
-  if (MemoryPool.keys.length > 0) {
-    let key = MemoryPool.keys.shift();
-    MemoryPool.startK.push(key);
-    if (MemoryPool.videosMap["foresight"].has(key)) {
-      Promise.all([
-        await foresight.value.postVideo(
-          MemoryPool.getInitVideo(key, "foresight"),
-          key,
-          "foresight"
-        ),
-        await right_front.value.postVideo(
-          MemoryPool.getInitVideo(key, "right_front"),
-          key,
-          "right_front"
-        ),
-        await left_front.value.postVideo(
-          MemoryPool.getInitVideo(key, "left_front"),
-          key,
-          "left_front"
-        ),
-        await rearview.value.postVideo(
-          MemoryPool.getInitVideo(key, "rearview"),
-          key,
-          "rearview"
-        ),
-        await left_back.value.postVideo(
-          MemoryPool.getInitVideo(key, "left_back"),
-          key,
-          "left_back"
-        ),
-        await right_back.value.postVideo(
-          MemoryPool.getInitVideo(key, "right_back"),
-          key,
-          "right_back"
-        ),
-      ]);
-    }
+requestAnimationFrame(animate);
+async function animate(time) {
+  let deltaTime = time - lastTime.value;
+  if (deltaTime > 17) {
+    console.error(deltaTime, "deltaTime");
   }
-  // console.log(Date.now(), "ppppp");
-  animationFrameId.value = requestAnimationFrame(() => {
-    animate();
+  lastTime.value = time;
+
+  if (time - lastUpdateTime.value > updateInterval.value) {
+    // 更新动画状态
+    await updateAnimation();
+    lastUpdateTime.value = time;
+  }
+  requestAnimationFrame(animate);
+}
+function updateAnimation() {
+  return new Promise(async (resolve, reject) => {
+    if (MemoryPool.keys.length > 0) {
+      // console.log("animate--1", Date.now());
+      let key = MemoryPool.keys.shift();
+      MemoryPool.startK.push(key);
+      if (MemoryPool.videosMap["foresight"].has(key)) {
+        Promise.all([
+          await foresight.value.postVideo(
+            MemoryPool.getInitVideo(key, "foresight"),
+            key,
+            "foresight"
+          ),
+          await right_front.value.postVideo(
+            MemoryPool.getInitVideo(key, "right_front"),
+            key,
+            "right_front"
+          ),
+          await left_front.value.postVideo(
+            MemoryPool.getInitVideo(key, "left_front"),
+            key,
+            "left_front"
+          ),
+          await rearview.value.postVideo(
+            MemoryPool.getInitVideo(key, "rearview"),
+            key,
+            "rearview"
+          ),
+          await left_back.value.postVideo(
+            MemoryPool.getInitVideo(key, "left_back"),
+            key,
+            "left_back"
+          ),
+          await right_back.value.postVideo(
+            MemoryPool.getInitVideo(key, "right_back"),
+            key,
+            "right_back"
+          ),
+        ]);
+      }
+    }
+    now_time.value = await formaData(new Date());
+    resolve("");
   });
 }
 
@@ -263,25 +281,17 @@ async function updateVideo() {
     if (!props.videoStart) videoInit();
     let key = MemoryPool.startK[0];
     let v_o = MemoryPool.v_o.get(key);
-    // console.log(
-    //   MemoryPool.hasVideo(key),
-    //   "MemoryPool.hasVideo(key)",
-    //   Date.now(),
-    //   key,
-    //   MemoryPool.startK.length
-    // );
-    console.log(key, "key00000");
+    console.log(
+      MemoryPool.hasVideo(key),
+      "----",
+      Date.now(),
+      MemoryPool.startK.length,
+      MemoryPool.keys.length,
+      key
+    );
     if (MemoryPool.hasVideo(key)) {
-      console.log("1");
+      // console.log("1", key, MemoryPool.bpMap.has(key), Date.now());
       Promise.all([
-        await BEV.value.drawBev({
-          objs: MemoryPool.objsMap.has(key)
-            ? MemoryPool.objsMap.get(key)
-            : null,
-          bevs_point: MemoryPool.bpMap.has(key)
-            ? MemoryPool.bpMap.get(key)
-            : null,
-        }),
         await foresight.value.drawVideo({
           bg: MemoryPool.getInitVideo(key, "foresight"),
           key: key,
@@ -312,7 +322,17 @@ async function updateVideo() {
           key: key,
           v_o: v_o,
         }),
+        await BEV.value.drawBev({
+          objs: MemoryPool.objsMap.has(key)
+            ? MemoryPool.objsMap.get(key)
+            : null,
+          bevs_point: MemoryPool.bpMap.has(key)
+            ? MemoryPool.bpMap.get(key)
+            : null,
+          key: key,
+        }),
       ]);
+      console.log(Date.now(), "--------------end", key);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
       MemoryPool.bpMap.delete(key);
@@ -489,6 +509,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+  color: rgb(97, 52, 255);
   .echarts_box {
     width: 100%;
     height: 102px;

@@ -1,4 +1,4 @@
-importScripts("/src/controls/opencv.js");
+import cv from '@techstark/opencv-js';
 let a;
 let mapx;
 let mapy;
@@ -7,6 +7,7 @@ let src;
 let cameralatrix = {};
 let distCoefis = {};
 let img_mat;
+let dst_rgba;
 let ext_lidar2cam = {
   foresight: [
     954.0700073242188 / 2,
@@ -112,7 +113,8 @@ let v_canvas = new OffscreenCanvas(960, 480),
 let cv_start = false;
 var Module = typeof Module != "undefined" ? Module : {};
 Module = {};
-cv["onRuntimeInitialized"] = () => {
+// console.log(cv, "cvvv");
+cv.onRuntimeInitialized = () => {
   postMessage({
     type: "message",
     info: "opencv_init",
@@ -121,6 +123,7 @@ cv["onRuntimeInitialized"] = () => {
   mapx = new cv.Mat();
   mapy = new cv.Mat();
   dst = new cv.Mat();
+  // dst_rgba = new cv.Mat();
   img_mat = new cv.Mat(480, 960, cv.CV_8UC4);
 };
 Module.onRuntimeInitialized = function () {
@@ -167,7 +170,7 @@ async function decodeArray(u8Array, key, view) {
       rgb: rgbData,
     };
     // if (view === "foresight") {
-    //   if (num <= 50) {
+    //   if (num <= 500) {
     //     tem = Date.now() - old_t + tem;
     //     num++;
     //   } else {
@@ -175,15 +178,15 @@ async function decodeArray(u8Array, key, view) {
     //   }
     //   d_old_t = Date.now();
     // }
-    // let a = 
+    // let a =
     // imageBitmap = await drawVideoBg(cv.remap(img_mat.data.set(rgbData), dst, mapx, mapy, cv.INTER_NEAREST), key, view);
     imageBitmap = await drawVideoBg(rgbObj, key, view);
     // if (view === "foresight") {
-    //   if (d_num <= 50) {
+    //   if (d_num <= 500) {
     //     d_tem = Date.now() - d_old_t + d_tem;
     //     d_num++;
     //   } else {
-    //     console.error(d_tem / 50, "88888888888");
+    //     console.error(d_tem / 500, "88888888888");
     //   }
     // }
     // if (view === "foresight") {
@@ -211,6 +214,8 @@ onmessage = function (e) {
     status = true;
   } else if (e.data.type === "opencv") {
     initCV(e.data.view);
+  } else if (e.data.type === "clear") {
+    clearFun();
   } else {
     // if (!status) return;
     if (!status || !cv_start) return;
@@ -225,21 +230,28 @@ onmessage = function (e) {
     decodeArray(e.data.video_data, e.data.key, e.data.view);
   }
 };
+let rgb_arr;
 
 // 渲染视频
 function drawVideoBg(info, key, view) {
   return new Promise((resolve, reject) => {
+    // rgb_arr = cv.matFromArray(info.height, info.width, cv.CV_8UC4, info.rgb);
+    // cv.remap(rgb_arr, dst, mapx, mapy, cv.INTER_NEAREST, cv.BORDER_CONSTANT, new cv.Scalar());
+    // cv.cvtColor(dst, dst_rgba, cv.COLOR_BGRA2RGBA);
+    // imgData = new ImageData(new Uint8ClampedArray(dst_rgba.data), dst_rgba.cols, dst_rgba.rows);
+    // v_context.putImageData(imgData, 0, 0);
+    // console.log(dst, "dst");
     imgData = new ImageData(info.rgb, info.width, info.height);
     for (let i = 0; i < imgData.data.length; i += 4) {
       let data0 = imgData.data[i + 0];
       imgData.data[i + 0] = imgData.data[i + 2];
       imgData.data[i + 2] = data0;
     }
-    // v_context.putImageData(imgData, 0, 0);
+    // 进行畸变校正
     src = imageDataToMat(imgData);
     cv.remap(src, dst, mapx, mapy, cv.INTER_NEAREST, cv.BORDER_CONSTANT);
-    // // 进行畸变校正
     v_context.putImageData(matToImageData(dst), 0, 0);
+    // v_context.putImageData(imgData, 0, 0);
     v_context.fillStyle = "white";
     v_context.fillRect(10, 0, 180, 30);
     v_context.font = "28px serif";
@@ -249,6 +261,12 @@ function drawVideoBg(info, key, view) {
     // resolve(v_context);
     resolve(v_canvas.transferToImageBitmap());
   });
+}
+function clearFun() {
+  mapx.delete();
+  mapy.delete();
+  dst.delete();
+  img_mat.delete();
 }
 function imageDataToMat(imageData) {
   img_mat.data.set(imageData.data);
