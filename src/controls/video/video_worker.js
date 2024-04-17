@@ -1,8 +1,14 @@
 /*
- * @LastEditTime: 2024-04-17 16:43:15
+ * @LastEditTime: 2024-04-17 21:02:52
  * @Description: 视频相关worker,只负责视频的数据接收
  */
 import { decode } from "@msgpack/msgpack";
+import {
+  handleObjs,
+  isLine,
+  isLineTooShort,
+  handleBevPoints,
+} from "@/controls/box2img.js";
 let ws,
   limitConnect = 10,
   timeConnect = 0;
@@ -65,7 +71,8 @@ const webSocketInit = (reconnect, webSocketInit) => {
             lb_buffer,
             key: object[0],
             sign: "video",
-          }, []
+          },
+          []
         );
         f_buffer = null;
         r_buffer = null;
@@ -75,10 +82,14 @@ const webSocketInit = (reconnect, webSocketInit) => {
         lb_buffer = null;
       }
       if (object[2][1] != 0) {
+        // console.log(Date.now(), "000000000", object[0]);
         saf = await handleVO(object[2], object[4]);
+        console.log(Date.now(), "11111111111", object[0]);
         postMessage({
-          bp: object[5],
-          objs: saf.bev_objs,
+          // bp: object[5],
+          bp: await handleBevLines(object[5]),
+          objs: await handleObjs(object[4]),
+          // objs: saf.bev_objs,
           v_objs: saf.v_objs,
           key: object[0],
           sign: "bev",
@@ -98,6 +109,38 @@ const reconnect = (reconnect, webSocketInit) => {
     webSocketInit(reconnect, webSocketInit);
   }, 1000);
 };
+let bev_lines = [],
+  line_arr,
+  line_points,
+  sort_arr = [
+    [100, 100],
+    [100, 100],
+  ],
+  line_sign;
+function handleBevLines(data) {
+  return new Promise(async (resolve, reject) => {
+    bev_lines = [];
+    data.forEach(async (item, index) => {
+      line_points = new Float32Array(200 * 3);
+      if (isLine(item[1])) {
+        line_arr = [item[1][0], item[1][item[1].length - 1]];
+        line_sign = isLineTooShort(line_arr);
+        if (line_sign) {
+          line_arr = sort_arr;
+        }
+        bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
+      } else {
+        line_sign = isLineTooShort(item[1]);
+        line_arr = item[1];
+        if (line_sign) {
+          line_arr = sort_arr;
+        }
+        bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
+      }
+    });
+    resolve(bev_lines);
+  });
+}
 function setBuffer(data) {
   return v_uni8.slice(0, data.length);
 }

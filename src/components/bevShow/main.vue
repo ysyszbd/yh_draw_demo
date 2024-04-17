@@ -202,7 +202,7 @@ videoWorker.onmessage = async (e) => {
     }
   }
   if (e.data.sign === "bev") {
-    // console.log(Date.now(), "2222", e.data.key);
+    console.log(Date.now(), "2222", e.data.key);
     MemoryPool.bpMap.set(e.data.key, e.data.bp);
     MemoryPool.objsMap.set(e.data.key, e.data.objs);
     MemoryPool.v_o.set(e.data.key, e.data.v_objs);

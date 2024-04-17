@@ -1,5 +1,5 @@
 /*
- * @LastEditTime: 2024-04-17 17:50:32
+ * @LastEditTime: 2024-04-17 21:16:01
  * @Description:
  */
 /*
@@ -15,12 +15,7 @@ import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import skyVertexShader from "@/assets/shader/skyVertexShader.vs?raw";
 import skyFragmentShader from "@/assets/shader/skyFragmentShader.fs?raw";
 import roadFragmentShader from "@/assets/shader/roadFragmentShader.fs?raw";
-import {
-  handleObjs,
-  isLine,
-  isLineTooShort,
-  handleBevPoints,
-} from "@/controls/box2img.js";
+import { isLine, isLineTooShort, handleBevPoints } from "@/controls/box2img.js";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
@@ -194,14 +189,17 @@ export default class bevImgContorl {
   async getData(data) {
     try {
       return new Promise(async (resolve, reject) => {
-        // if (data.bevs_point) {
-        //   // this.setPoints(data.bevs_point);
-        //   await this.handleLine(await this.handleBevLines(data.bevs_point));
-        // }
+        if (data.bevs_point) {
+          // this.setPoints(data.bevs_point);
+          console.log(Date.now(), "pppppppppp0000000000000000", data.key);
+          await this.handleLine(data.bevs_point);
+          // await this.handleLine(await this.handleBevLines(data.bevs_point));
+          console.log(Date.now(), "pppppppppp111111111111", data.key);
+        }
 
-        // if (data.objs) {
-        //   await this.handleObjs(await handleObjs(data.objs));
-        // }
+        if (data.objs) {
+          await this.handleObjs(data.objs);
+        }
         resolve("ppp");
       });
     } catch (err) {
@@ -212,7 +210,7 @@ export default class bevImgContorl {
   handleBevLines(data) {
     return new Promise(async (resolve, reject) => {
       this.bev_lines = [];
-      let arr
+      let arr;
       data.forEach(async (item, index) => {
         this.points = new Float32Array(200 * 3);
         if (isLine(item[1])) {
@@ -384,11 +382,13 @@ export default class bevImgContorl {
             this.lines.group.remove(this.lines.group.children[j]);
           }
         }
-  
+
         if (this.lines.group.children.length >= bev_points.length) {
           // console.log("llllll");
           for (let i = 0; i < bev_points.length; i++) {
-            this.lines.group.children[i].geometry.setPositions(bev_points[i][1]);
+            this.lines.group.children[i].geometry.setPositions(
+              bev_points[i][1]
+            );
             this.lines.group.children[
               i
             ].geometry.attributes.position.needsUpdate = true;
@@ -411,7 +411,9 @@ export default class bevImgContorl {
           }
         } else {
           for (let i = 0; i < this.lines.group.children.length; i++) {
-            this.lines.group.children[i].geometry.setPositions(bev_points[i][1]);
+            this.lines.group.children[i].geometry.setPositions(
+              bev_points[i][1]
+            );
             this.lines.group.children[
               i
             ].geometry.attributes.position.needsUpdate = true;
@@ -435,8 +437,8 @@ export default class bevImgContorl {
           this.scene.add(this.lines.group);
         }
       }
-      resolve("线条更新完毕")
-    })
+      resolve("线条更新完毕");
+    });
   }
   // 绘制可以改变宽度的线条   dashed：true虚线、false实线
   setWidthLine(pointsArr, color = "rgb(80,190,225)") {

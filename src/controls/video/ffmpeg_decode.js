@@ -286,7 +286,8 @@ function initCV(view) {
     new cv.Mat(),
     cameralatrix[view],
     { width: 960, height: 480 },
-    cv.CV_16SC2,
+    cv.CV_32FC1,
+    // cv.CV_16SC2,
     mapx,
     mapy
   );
