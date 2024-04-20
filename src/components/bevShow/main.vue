@@ -39,10 +39,10 @@
       </div>
       <div class="b_center_box">
         <Bev ref="BEV" />
-        <div class="echarts_box">
+        <!-- <div class="echarts_box">
           <div class="echart"></div>
           <div class="echart"></div>
-        </div>
+        </div> -->
       </div>
       <div class="right">
         <div class="v_title">后</div>
@@ -71,6 +71,28 @@
         />
       </div>
     </div>
+    <!-- <div class="videos_box">
+      <div class="video_box">
+        <div class="v_title" id="v_title">前</div>
+          <videoYH
+            ref="foresight"
+            id="foresight"
+            :video_id="'foresight'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+      </div>
+      <div class="video_box">
+        <div class="v_title">后</div>
+        <videoYH
+          ref="rearview"
+          id="rearview"
+          :video_id="'rearview'"
+          :class="[`v_1`, 'v_box']"
+          @updataVideoStatus="updataVideoStatus"
+        />
+      </div>
+    </div> -->
   </div>
 </template>
 
@@ -503,7 +525,7 @@ onUnmounted(() => {
 }
 .b_center_box {
   width: 352px;
-  height: 100%;
+  // height: 100%;
   margin: 0 26px;
   display: flex;
   flex-direction: column;
@@ -523,6 +545,18 @@ onUnmounted(() => {
       background: url("@/assets/images/echart_bg.png") no-repeat;
       background-size: 100% 100%;
     }
+  }
+}
+.videos_box {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .video_box {
+    width: 100%;
+    height: 100%;
+    margin: 0 52px;
   }
 }
 </style>

@@ -3,32 +3,32 @@
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 1586,
+      "count": 43395,
       "max": [
-        1.5960379838943481,
-        3.7438883781433105,
-        1.4156684875488281
+        1.1447619199752808,
+        2.7137818336486816,
+        2.8575708866119385
       ],
       "min": [
-        -2.2476584911346436,
-        -2.4808995723724365,
-        -8.302896499633789
+        -0.6593877673149109,
+        -8.868643760681152,
+        -2.8575706481933594
       ],
       "type": "VEC3"
     },
     {
       "bufferView": 2,
-      "byteOffset": 19032,
+      "byteOffset": 520740,
       "componentType": 5126,
-      "count": 1586,
+      "count": 43395,
       "max": [
-        1.0,
-        0.9987300038337708,
+        0.9999997615814209,
+        0.9999934434890747,
         1.0
       ],
       "min": [
-        -0.9996387958526611,
-        -0.9987300038337708,
+        -0.9999959468841553,
+        -0.9999971389770508,
         -1.0
       ],
       "type": "VEC3"
@@ -36,25 +36,10 @@
     {
       "bufferView": 1,
       "componentType": 5126,
-      "count": 1586,
+      "count": 43395,
       "max": [
-        0.9726996421813965,
-        0.9702388048171997
-      ],
-      "min": [
-        0.010242044925689697,
-        0.00633576512336731
-      ],
-      "type": "VEC2"
-    },
-    {
-      "bufferView": 1,
-      "byteOffset": 12688,
-      "componentType": 5126,
-      "count": 1586,
-      "max": [
-        0.0,
-        0.0
+        1.0,
+        1.000000238418579
       ],
       "min": [
         0.0,
@@ -65,39 +50,39 @@
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 2382,
+      "count": 219324,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "Hanesto (https://sketchfab.com/Hanesto)",
+      "author": "Animation-class-k (https://sketchfab.com/Animation-class-k)",
       "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/pedestrian-003-medieval-assets-231ff290ad6440c9bf99a4d8eccfb3d4",
-      "title": "Pedestrian [003] [Medieval Assets]"
+      "source": "https://sketchfab.com/3d-models/sculpting-a-human-body-a24baf3514834527972bffdad882258e",
+      "title": "sculpting a human body"
     },
-    "generator": "Sketchfab-12.63.0",
+    "generator": "Sketchfab-12.68.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 9528,
+      "byteLength": 877296,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 25376,
-      "byteOffset": 9528,
+      "byteLength": 347160,
+      "byteOffset": 877296,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 38064,
-      "byteOffset": 34904,
+      "byteLength": 1041480,
+      "byteOffset": 1224456,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -105,40 +90,31 @@
   ],
   "buffers": [
     {
-      "byteLength": 72968,
+      "byteLength": 2265936,
       "uri": "scene.bin"
-    }
-  ],
-  "images": [
-    {
-      "uri": "textures/eyebrows_baseColor.png"
     }
   ],
   "materials": [
     {
       "doubleSided": true,
-      "name": "eyebrows",
+      "name": "Scene_-_Root",
       "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 0
-        },
         "metallicFactor": 0.0,
-        "roughnessFactor": 0.9577051495
+        "roughnessFactor": 0.6
       }
     }
   ],
   "meshes": [
     {
-      "name": "woman1.001_eyebrows_0",
+      "name": "Object_0",
       "primitives": [
         {
           "attributes": {
             "NORMAL": 1,
             "POSITION": 0,
-            "TEXCOORD_0": 2,
-            "TEXCOORD_1": 3
+            "TEXCOORD_0": 2
           },
-          "indices": 4,
+          "indices": 3,
           "material": 0,
           "mode": 4
         }
@@ -156,16 +132,16 @@
         0.0,
         0.0,
         0.0,
-        2.220446049250313e-16,
+        3.828568672208042e-16,
         -1.0,
         0.0,
         0.0,
         1.0,
-        2.220446049250313e-16,
+        3.828568672208042e-16,
         0.0,
-        0.0,
-        0.0,
-        0.0,
+        -1.42259128921296e-08,
+        0.00022352229279931648,
+        -0.0005720693152397871,
         1.0
       ],
       "name": "Sketchfab_model"
@@ -174,67 +150,59 @@
       "children": [
         2
       ],
+      "name": "root"
+    },
+    {
+      "children": [
+        3
+      ],
       "matrix": [
         1.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        0.0,
+        2.220446049250313e-16,
         1.0,
         0.0,
         0.0,
         -1.0,
-        0.0,
+        2.220446049250313e-16,
         0.0,
         0.0,
         0.0,
         0.0,
         1.0
       ],
-      "name": "771ceca39d484b4b9be108afd642a8ae.fbx"
-    },
-    {
-      "children": [
-        3
-      ],
-      "name": "RootNode"
+      "name": "GLTF_SceneRootNode"
     },
     {
       "children": [
         4
       ],
       "matrix": [
-        -7.097054266984541,
-        -1.0148633907066355e-06,
-        -14.630723577262634,
+        -7.568630285237742e-08,
+        0.0029111573484582446,
+        -0.8978873385870807,
         0.0,
-        -14.630723577262494,
-        3.0124932576227513e-06,
-        7.097054266984264,
+        2.4080173134845416e-10,
+        0.7992443753244819,
+        0.002591334164596989,
         0.0,
-        2.267510759737813e-06,
-        16.261190414428402,
-        -2.2278825511755266e-06,
+        0.7992480993270846,
+        -2.2368291982275864e-11,
+        -6.737170268957416e-08,
         0.0,
-        -145.84097290039063,
-        110.57341003417969,
-        -32.169776916503906,
+        0.11674904823303223,
+        7.14259147644043,
+        -1.0571131706237793,
         1.0
       ],
-      "name": "woman1.001"
+      "name": "pody_0"
     },
     {
       "mesh": 0,
-      "name": "woman1.001_eyebrows_0"
-    }
-  ],
-  "samplers": [
-    {
-      "magFilter": 9729,
-      "minFilter": 9987,
-      "wrapS": 10497,
-      "wrapT": 10497
+      "name": "Object_4"
     }
   ],
   "scene": 0,
@@ -244,12 +212,6 @@
       "nodes": [
         0
       ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
     }
   ]
 }

@@ -32,6 +32,7 @@ defineExpose({
 <style lang="scss" scoped>
 .rbg_demo {
   width: 260px;
+  // height: 100%;
   height: 320px;
   display: flex;
   align-items: center;

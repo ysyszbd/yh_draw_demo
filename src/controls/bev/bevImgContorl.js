@@ -89,7 +89,7 @@ export default class bevImgContorl {
     pedestrian: null,
     pedestrian_group: new THREE.Object3D(),
     pedestrian_tags: new THREE.Object3D(),
-    pedestrian_rot: Math.PI / 2 + Math.PI / 3,
+    pedestrian_rot: 0,
     pedestrian_whl: {},
     // street_cone: null,
     // street_cone_group: new THREE.Object3D(),
@@ -750,29 +750,29 @@ export default class bevImgContorl {
         } else if (item.id === "car") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI / 2;
-          gltf.position.y = -100;
-          gltf.position.x = -100;
+          gltf.position.y = -150;
+          gltf.position.x = -150;
           size = this.ge3Dsize(gltf);
           s = Math.min(1.7 / size.x);
           // gltf.scale.set(2, 2, 2);
           // gltf.scale.set(s, s, s);
         } else if (item.id === "truck") {
           gltf.rotation.x = Math.PI / 2;
-          // gltf.rotation.y = Math.PI;
-          gltf.position.y = -15;
-          gltf.position.x = -10;
-          size = this.ge3Dsize(gltf);
-          s = 4.8 / size.x;
-          // gltf.scale.set(s, s, s);
-        } else if (item.id === "bus") {
-          gltf.rotation.x = Math.PI / 2;
-          // gltf.rotation.y = Math.PI;
+          gltf.rotation.y = Math.PI;
           gltf.position.y = -100;
           gltf.position.x = -100;
           size = this.ge3Dsize(gltf);
+          s = 4.8 / size.x;
+          // gltf.scale.set(0.6, 0.6, 0.6);
+        } else if (item.id === "bus") {
+          gltf.rotation.x = Math.PI / 2;
+          // gltf.rotation.y = Math.PI;
+          gltf.position.y = -150;
+          gltf.position.x = -150;
+          size = this.ge3Dsize(gltf);
           
           s = 2.5 / size.x;
-          // gltf.scale.set(0.7, 0.7, 0.7);
+          gltf.scale.set(0.55, 0.55, 0.55);
         } else if (item.id === "trailer") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI;
@@ -783,14 +783,14 @@ export default class bevImgContorl {
           // gltf.scale.set(2,2,2);
         } else if (item.id === "barrier") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.position.x = -105;
+          gltf.position.x = -100;
           gltf.position.y = -140;
           // gltf.scale.set(2,2,2);
         } else if (item.id === "motorcycle") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI / 2;
           gltf.position.x = 100;
-          gltf.position.y = -120;
+          gltf.position.y = 120;
           // size = this.ge3Dsize(gltf);
           // s = 0.98 / size.x;
           // gltf.scale.set(s, s, s);
@@ -798,8 +798,8 @@ export default class bevImgContorl {
         } else if (item.id === "bicycle") {
           gltf.rotation.x = Math.PI / 2;
           gltf.rotation.y = Math.PI / 2;
-          gltf.position.x = -124;
-          gltf.position.y = -134;
+          gltf.position.x = 120;
+          gltf.position.y = 130;
           // size = this.ge3Dsize(gltf);
           // s = 1 / size.x;
           // gltf.scale.set(s, s, s);
@@ -807,11 +807,11 @@ export default class bevImgContorl {
           gltf.scale.set(1.8, 1.8, 1.8);
         } else if (item.id === "pedestrian") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI / 2 + Math.PI / 3;
+          // gltf.rotation.y = Math.PI / 2 + Math.PI / 3;
           gltf.position.x = 120;
-          gltf.position.y = -114;
+          gltf.position.y = 110;
           size = this.ge3Dsize(gltf);
-          s = 2.5 / size.z;
+          s = 3 / size.z;
           // gltf.scale.set(0.5, 0.5, 0.5);
           gltf.scale.set(s, s, s);
         }
@@ -832,7 +832,7 @@ export default class bevImgContorl {
           gltf.position.y = -100;
           size = this.ge3Dsize(gltf);
           s = 6 / size.x;
-          // gltf.scale.set(s, s, s);
+          gltf.scale.set(0.6, 0.6, 0.6);
           // gltf.scale.set(2,2,2);
         }
         if (item.id !== "main_car") {

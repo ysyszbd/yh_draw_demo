@@ -113,6 +113,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: pink;
   .handle_box_canvas {
     // width: 100%;
     height: 100%;
