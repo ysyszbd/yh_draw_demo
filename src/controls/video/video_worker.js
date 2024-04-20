@@ -64,6 +64,8 @@ const webSocketInit = (reconnect, webSocketInit) => {
         postMessage(
           {
             f_buffer,
+
+
             r_buffer,
             rf_buffer,
             rb_buffer,
@@ -84,7 +86,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
       if (object[2][1] != 0) {
         // console.log(Date.now(), "000000000", object[0]);
         saf = await handleVO(object[2], object[4]);
-        console.log(Date.now(), "11111111111", object[0]);
+        // console.log(Date.now(), "11111111111", object[0]);
         postMessage({
           // bp: object[5],
           bp: await handleBevLines(object[5]),

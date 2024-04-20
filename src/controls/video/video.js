@@ -123,26 +123,26 @@ export default class Video {
           );
           this.v_objs_cxt.beginPath();
           this.v_objs_cxt.fillStyle = this.obj.color;
-          this.v_objs_cxt.font = "18px serif";
-          this.obj.text = this.v_objs_cxt.measureText(this.obj.obj_data[2]);
-          this.obj.x =
-            (this.obj.box[7][0] - this.obj.box[6][0]) / 2 +
-            this.obj.box[6][0] -
-            this.obj.text.width / 2;
-          this.obj.y = this.obj.box[6][1];
-          this.v_objs_cxt.fillRect(
-            this.obj.x - 1,
-            this.obj.y - 18,
-            this.obj.text.width + 1,
-            18
-          );
-          this.v_objs_cxt.fillStyle = "#fff";
-          this.v_objs_cxt.fillText(
-            this.obj.obj_data[2],
-            this.obj.x,
-            this.obj.y
-          );
-          this.v_objs_cxt.lineWidth = "1.4"; //线条 宽度
+          // this.v_objs_cxt.font = "18px serif";
+          // this.obj.text = this.v_objs_cxt.measureText(this.obj.obj_data[2]);
+          // this.obj.x =
+          //   (this.obj.box[7][0] - this.obj.box[6][0]) / 2 +
+          //   this.obj.box[6][0] -
+          //   this.obj.text.width / 2;
+          // this.obj.y = this.obj.box[6][1];
+          // this.v_objs_cxt.fillRect(
+          //   this.obj.x - 1,
+          //   this.obj.y - 18,
+          //   this.obj.text.width + 1,
+          //   18
+          // );
+          // this.v_objs_cxt.fillStyle = "#fff";
+          // this.v_objs_cxt.fillText(
+          //   this.obj.obj_data[2],
+          //   this.obj.x,
+          //   this.obj.y
+          // );
+          // this.v_objs_cxt.lineWidth = "1.4"; //线条 宽度
           this.v_objs_cxt.strokeStyle = this.obj.color;
           this.drawBox(this.obj.box);
         } else {
@@ -150,15 +150,17 @@ export default class Video {
           // console.log(type, "type");
         }
       });
-      this.v_objs_cxt.fillStyle = "white";
-      this.v_objs_cxt.fillRect(10, 20, 180, 30);
-      this.v_objs_cxt.font = "28px serif";
-      this.v_objs_cxt.fillStyle = "green";
-      this.v_objs_cxt.fillText(key, 10, 44);
+      // this.v_objs_cxt.fillStyle = "white";
+      // this.v_objs_cxt.fillRect(10, 20, 180, 30);
+      // this.v_objs_cxt.font = "28px serif";
+      // this.v_objs_cxt.fillStyle = "green";
+      // this.v_objs_cxt.fillText(key, 10, 44);
       resolve(this.v_objs_canvas.transferToImageBitmap());
     });
   }
   drawBox(box) {
+    this.drawDot(box[6][0], box[6][1]);
+    this.drawDot(box[7][0], box[7][1]);
     this.v_objs_cxt.moveTo(box[0][0], box[0][1]); //移动到某个点；
     this.v_objs_cxt.lineTo(box[1][0], box[1][1]);
     this.v_objs_cxt.lineTo(box[5][0], box[5][1]);
@@ -177,6 +179,13 @@ export default class Video {
     this.v_objs_cxt.moveTo(box[3][0], box[3][1]);
     this.v_objs_cxt.lineTo(box[7][0], box[7][1]);
     this.v_objs_cxt.stroke(); //描边
+  }
+  // 绘制圆点
+  drawDot(x, y){
+    this.v_objs_cxt.beginPath();
+    this.v_objs_cxt.arc(x,y, 10, 0, 2 * Math.PI);
+    this.v_objs_cxt.fillStyle = "red";
+    this.v_objs_cxt.fill();              
   }
   clear() {
     this.dom = null;

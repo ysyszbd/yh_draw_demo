@@ -194,7 +194,7 @@ videoWorker.onmessage = async (e) => {
         MemoryPool.setInitVideo(e.data.key, e.data.lf_buffer, "left_front");
       }
       if (MemoryPool.videosMap["foresight"].size > 0) {
-        console.log(e.data.key, "e.data.key", Date.now());
+        // console.log(e.data.key, "e.data.key", Date.now());
         await updateVideo();
       }
     } else {
@@ -202,7 +202,7 @@ videoWorker.onmessage = async (e) => {
     }
   }
   if (e.data.sign === "bev") {
-    console.log(Date.now(), "2222", e.data.key);
+    // console.log(Date.now(), "2222", e.data.key);
     MemoryPool.bpMap.set(e.data.key, e.data.bp);
     MemoryPool.objsMap.set(e.data.key, e.data.objs);
     MemoryPool.v_o.set(e.data.key, e.data.v_objs);
@@ -216,11 +216,11 @@ videoWorker.onmessage = async (e) => {
 const props = defineProps(["videoStart"]);
 requestAnimationFrame(animate);
 async function animate(time) {
-  let deltaTime = time - lastTime.value;
-  if (deltaTime > 17) {
-    console.error(deltaTime, "deltaTime");
-  }
-  lastTime.value = time;
+  // let deltaTime = time - lastTime.value;
+  // if (deltaTime > 17) {
+  //   console.error(deltaTime, "deltaTime");
+  // }
+  // lastTime.value = time;
 
   if (time - lastUpdateTime.value > updateInterval.value) {
     // 更新动画状态
@@ -281,14 +281,14 @@ async function updateVideo() {
     if (!props.videoStart) videoInit();
     let key = MemoryPool.startK[0];
     let v_o = MemoryPool.v_o.get(key);
-    console.log(
-      MemoryPool.hasVideo(key),
-      "----",
-      Date.now(),
-      MemoryPool.startK.length,
-      MemoryPool.keys.length,
-      key
-    );
+    // console.log(
+    //   MemoryPool.hasVideo(key),
+    //   "----",
+    //   Date.now(),
+    //   MemoryPool.startK.length,
+    //   MemoryPool.keys.length,
+    //   key
+    // );
     if (MemoryPool.hasVideo(key)) {
       // console.log("1", key, MemoryPool.bpMap.has(key), Date.now());
       Promise.all([
@@ -332,7 +332,7 @@ async function updateVideo() {
           key: key,
         }),
       ]);
-      console.log(Date.now(), "--------------end", key);
+      // console.log(Date.now(), "--------------end", key);
       await MemoryPool.delInitVideo(key);
       MemoryPool.startK.shift();
       MemoryPool.bpMap.delete(key);
