@@ -12,14 +12,14 @@
     </div>
     <div class="bottom_box" id="bottom_box">
       <div class="left">
-        <div class="v_title" id="v_title">前</div>
+        <!-- <div class="v_title" id="v_title">前</div>
         <videoYH
           ref="foresight"
           id="foresight"
           :video_id="'foresight'"
           :class="[`v_1`, 'v_box']"
           @updataVideoStatus="updataVideoStatus"
-        />
+        /> -->
         <div class="v_title">左前</div>
         <videoYH
           ref="left_front"
@@ -45,14 +45,14 @@
         </div> -->
       </div>
       <div class="right">
-        <div class="v_title">后</div>
+        <!-- <div class="v_title">后</div>
         <videoYH
           ref="rearview"
           id="rearview"
           :video_id="'rearview'"
           :class="[`v_1`, 'v_box']"
           @updataVideoStatus="updataVideoStatus"
-        />
+        /> -->
         <div class="v_title">右前</div>
         <videoYH
           ref="right_front"
@@ -71,8 +71,8 @@
         />
       </div>
     </div>
-    <!-- <div class="videos_box">
-      <div class="video_box">
+    <div class="videos_box">
+      <div class="video_box_bottom">
         <div class="v_title" id="v_title">前</div>
           <videoYH
             ref="foresight"
@@ -82,7 +82,7 @@
             @updataVideoStatus="updataVideoStatus"
           />
       </div>
-      <div class="video_box">
+      <div class="video_box_bottom">
         <div class="v_title">后</div>
         <videoYH
           ref="rearview"
@@ -92,7 +92,7 @@
           @updataVideoStatus="updataVideoStatus"
         />
       </div>
-    </div> -->
+    </div>
   </div>
 </template>
 
@@ -480,19 +480,25 @@ onUnmounted(() => {
 }
 .bottom_box {
   width: 100%;
-  height: 100%;
+  height: 350px;
+  // height: 100%;
+  flex-shrink: 0;
   display: flex;
   // align-items: center;
   justify-content: center;
+  padding: 0 52px;
+  box-sizing: border-box;
 }
 .left {
-  width: 280px;
+  width: 100%;
+  // width: 280px;
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 .right {
-  width: 280px;
+  width: 100%;
+  // width: 280px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -552,11 +558,14 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  .video_box {
-    width: 100%;
+  justify-content: space-between;
+  padding: 0 52px;
+  box-sizing: border-box;
+  .video_box_bottom {
+    width: 49%;
     height: 100%;
-    margin: 0 52px;
+    display: flex;
+    flex-direction: column;
   }
 }
 </style>
