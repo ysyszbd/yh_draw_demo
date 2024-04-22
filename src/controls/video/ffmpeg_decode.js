@@ -252,11 +252,11 @@ function drawVideoBg(info, key, view) {
     cv.remap(src, dst, mapx, mapy, cv.INTER_NEAREST, cv.BORDER_CONSTANT);
     v_context.putImageData(matToImageData(dst), 0, 0);
     // v_context.putImageData(imgData, 0, 0);
-    // v_context.fillStyle = "white";
-    // v_context.fillRect(10, 0, 180, 30);
-    // v_context.font = "28px serif";
-    // v_context.fillStyle = "red";
-    // v_context.fillText(key, 10, 20);
+    v_context.fillStyle = "white";
+    v_context.fillRect(10, 60, 250, 38);
+    v_context.font = "38px serif";
+    v_context.fillStyle = "red";
+    v_context.fillText(key, 10, 90);
 
     // resolve(v_context);
     resolve(v_canvas.transferToImageBitmap());

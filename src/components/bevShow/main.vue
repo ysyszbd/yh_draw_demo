@@ -1,9 +1,11 @@
 <template>
   <div class="my_page">
     <div class="page_title">
-      <div class="title_box title_time">{{ now_time }}</div>
+      <!-- <div class="title_box title_time">{{ now_time }}</div> -->
       <div class="title_text">
-        <div class="big">易航智能-灵眸®BEV感知</div>
+        <div class="big">
+          易航智能-“灵眸”BEV感知
+        </div>
         <div class="little">W W W . Y I H A N G . A I</div>
       </div>
       <div class="title_box title_logo">
@@ -12,6 +14,15 @@
     </div>
     <div class="bottom_box" id="bottom_box">
       <div class="left">
+        <div class="videos">
+          <videoYH
+            ref="foresight"
+            id="foresight"
+            :video_id="'foresight'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
         <!-- <div class="v_title" id="v_title">前</div>
         <videoYH
           ref="foresight"
@@ -20,30 +31,35 @@
           :class="[`v_1`, 'v_box']"
           @updataVideoStatus="updataVideoStatus"
         /> -->
-        <div class="v_title">左前</div>
-        <videoYH
-          ref="left_front"
-          id="left_front"
-          :video_id="'left_front'"
-          :class="[`v_1`, 'v_box']"
-          @updataVideoStatus="updataVideoStatus"
-        />
-        <div class="v_title">左后</div>
-        <videoYH
-          ref="left_back"
-          id="left_back"
-          :video_id="'left_back'"
-          :class="[`v_1`, 'v_box']"
-          @updataVideoStatus="updataVideoStatus"
-        />
+        <div class="videos">
+          <!-- <div class="title">
+            <img class="camre_logo" src="@/assets/images/c_white.png">
+            左后
+          </div> -->
+          <!-- <div class="v_title">左后</div> -->
+          <videoYH
+            ref="left_back"
+            id="left_back"
+            :video_id="'left_back'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
+        <div class="videos">
+          <!-- <div class="title">右后</div> -->
+          <!-- <div class="v_title">右后</div> -->
+          <videoYH
+            ref="right_front"
+            id="right_front"
+            :video_id="'right_front'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+          
+        </div>
+        
       </div>
-      <div class="b_center_box">
-        <Bev ref="BEV" />
-        <!-- <div class="echarts_box">
-          <div class="echart"></div>
-          <div class="echart"></div>
-        </div> -->
-      </div>
+      
       <div class="right">
         <!-- <div class="v_title">后</div>
         <videoYH
@@ -53,27 +69,68 @@
           :class="[`v_1`, 'v_box']"
           @updataVideoStatus="updataVideoStatus"
         /> -->
-        <div class="v_title">右前</div>
-        <videoYH
-          ref="right_front"
-          id="right_front"
-          :video_id="'right_front'"
-          :class="[`v_1`, 'v_box']"
-          @updataVideoStatus="updataVideoStatus"
-        />
-        <div class="v_title">右后</div>
-        <videoYH
-          ref="right_back"
-          id="right_back"
-          :video_id="'right_back'"
-          :class="[`v_1`, 'v_box']"
-          @updataVideoStatus="updataVideoStatus"
-        />
+        <div class="videos">
+          <!-- <div class="title">左前</div> -->
+          <videoYH
+            ref="rearview"
+            id="rearview"
+            :video_id="'rearview'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
+        <!-- <div class="v_title">左前</div> -->
+        <div class="videos">
+          <!-- <div class="title">左前</div> -->
+          <videoYH
+            ref="left_front"
+            id="left_front"
+            :video_id="'left_front'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
+        <div class="videos">
+          <!-- <div class="title">右前</div> -->
+          <videoYH
+            ref="right_back"
+            id="right_back"
+            :video_id="'right_back'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
+        <!-- <div class="v_title">右前</div> -->
+        
+      </div>
+      <!-- <div class="right">
+        <div class="videos">
+          <videoYH
+            ref="foresight"
+            id="foresight"
+            :video_id="'foresight'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
+        <div class="videos">
+          <videoYH
+            ref="rearview"
+            id="rearview"
+            :video_id="'rearview'"
+            :class="[`v_1`, 'v_box']"
+            @updataVideoStatus="updataVideoStatus"
+          />
+        </div>
+        
+      </div> -->
+      <div class="b_center_box">
+        <Bev ref="BEV" />
       </div>
     </div>
-    <div class="videos_box">
-      <div class="video_box_bottom">
-        <div class="v_title" id="v_title">前</div>
+    <!-- <div class="videos_box">
+      <div class="video_box_bottom videos">
+        <div class="title">前</div>
           <videoYH
             ref="foresight"
             id="foresight"
@@ -82,8 +139,8 @@
             @updataVideoStatus="updataVideoStatus"
           />
       </div>
-      <div class="video_box_bottom">
-        <div class="v_title">后</div>
+      <div class="video_box_bottom videos">
+        <div class="title">后</div>
         <videoYH
           ref="rearview"
           id="rearview"
@@ -92,7 +149,8 @@
           @updataVideoStatus="updataVideoStatus"
         />
       </div>
-    </div>
+    </div> -->
+    
   </div>
 </template>
 
@@ -360,7 +418,7 @@ async function updateVideo() {
       MemoryPool.bpMap.delete(key);
       MemoryPool.objsMap.delete(key);
       MemoryPool.v_o.delete(key);
-      MemoryPool.clearMaps(key);
+      // MemoryPool.clearMaps(key);
       key = null;
     }
     resolve("");
@@ -450,6 +508,7 @@ onUnmounted(() => {
     flex-direction: column;
     box-sizing: border-box;
     padding-top: 23px;
+    
     .big {
       display: inline-block;
       font-weight: 400;
@@ -459,6 +518,18 @@ onUnmounted(() => {
       background: linear-gradient(0deg, #9df5ff 0%, #ffffff 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
+      position: relative;
+      .icon { 
+        background: linear-gradient(0deg, #9df5ff 0%, #ffffff 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+        font-size: 10px;
+        //display: flex;
+        position: absolute;
+        top: -5px;
+        left: 147px;
+      }
     }
     .little {
       width: 158px;
@@ -480,13 +551,13 @@ onUnmounted(() => {
 }
 .bottom_box {
   width: 100%;
-  height: 350px;
-  // height: 100%;
-  flex-shrink: 0;
+  //height: 350px;
+  height: 100%;
+  //flex-shrink: 0;
   display: flex;
   // align-items: center;
   justify-content: center;
-  padding: 0 52px;
+  padding: 0 32px;
   box-sizing: border-box;
 }
 .left {
@@ -495,6 +566,8 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding-left: 15px;
+  box-sizing: border-box;
 }
 .right {
   width: 100%;
@@ -503,9 +576,36 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-
+.videos {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  box-sizing: border-box;
+  margin: 3px;
+  .camre_logo {
+    width: 10px;
+  }
+  .title {
+    width: 35px;
+    // width: 280px;
+    height: 30px;
+    writing-mode: sideways-rl;
+    background: linear-gradient(
+      92deg,
+      rgba(8, 37, 183, 0.6),
+      rgba(1, 180, 255, 0.04)
+    );
+    color: #fff;
+    flex-shrink: 0;
+    font-size: 10px;
+    margin-right: 3px;
+    display: flex;
+    align-items: center;
+  }
+}
 .v_title {
-  width: 280px;
+  width: 28px;
+  // width: 280px;
   height: 22px;
   color: #fff;
   font-size: 10px;
@@ -527,16 +627,16 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 5px 0;
+  // margin: 3px 0;
 }
 .b_center_box {
-  width: 352px;
+  //width: 352px;
   // height: 100%;
-  margin: 0 26px;
+  // margin: 0 26px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   color: rgb(97, 52, 255);
   .echarts_box {
     width: 100%;
@@ -561,11 +661,12 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 0 52px;
   box-sizing: border-box;
+  margin-top: 10px;
   .video_box_bottom {
     width: 49%;
     height: 100%;
     display: flex;
-    flex-direction: column;
+    // flex-direction: column;
   }
 }
 </style>

@@ -53,7 +53,8 @@ export default class bevImgContorl {
     truck: null,
     truck_group: new THREE.Object3D(),
     truck_tags: new THREE.Object3D(),
-    truck_rot: Math.PI,
+    truck_rot: Math.PI / 2,
+    // truck_rot: Math.PI,
     truck_whl: {},
     construction_vehicle: null,
     construction_vehicle_group: new THREE.Object3D(),
@@ -64,33 +65,34 @@ export default class bevImgContorl {
     bus_group: new THREE.Object3D(),
     bus_tags: new THREE.Object3D(),
     bus_rot: 0,
-    // bus_rot: Math.PI,
+    // bus_rot: Math.PI / 2,
     bus_whl: {},
     trailer: null,
     trailer_group: new THREE.Object3D(),
     trailer_tags: new THREE.Object3D(),
-    trailer_rot: Math.PI,
+    trailer_rot: Math.PI / 2,
+    // trailer_rot: Math.PI,
     trailer_whl: {},
     barrier: null,
     barrier_group: new THREE.Object3D(),
     barrier_tags: new THREE.Object3D(),
     barrier_rot: 0,
     barrier_whl: {},
-    motorcycle: null,
-    motorcycle_group: new THREE.Object3D(),
-    motorcycle_tags: new THREE.Object3D(),
-    motorcycle_rot: Math.PI / 2,
-    motorcycle_whl: {},
-    bicycle: null,
-    bicycle_group: new THREE.Object3D(),
-    bicycle_tags: new THREE.Object3D(),
-    bicycle_rot: Math.PI / 2,
-    bicycle_whl: {},
-    pedestrian: null,
-    pedestrian_group: new THREE.Object3D(),
-    pedestrian_tags: new THREE.Object3D(),
-    pedestrian_rot: 0,
-    pedestrian_whl: {},
+    // motorcycle: null,
+    // motorcycle_group: new THREE.Object3D(),
+    // motorcycle_tags: new THREE.Object3D(),
+    // motorcycle_rot: Math.PI / 2,
+    // motorcycle_whl: {},
+    // bicycle: null,
+    // bicycle_group: new THREE.Object3D(),
+    // bicycle_tags: new THREE.Object3D(),
+    // bicycle_rot: Math.PI / 2,
+    // bicycle_whl: {},
+    // pedestrian: null,
+    // pedestrian_group: new THREE.Object3D(),
+    // pedestrian_tags: new THREE.Object3D(),
+    // pedestrian_rot: 0,
+    // pedestrian_whl: {},
     // street_cone: null,
     // street_cone_group: new THREE.Object3D(),
     // street_cone_tags: new THREE.Object3D(),
@@ -105,9 +107,9 @@ export default class bevImgContorl {
     "2-0": "bus",
     "2-1": "trailer",
     "3-0": "barrier",
-    "4-0": "motorcycle",
-    "4-1": "bicycle",
-    "5-0": "pedestrian",
+    // "4-0": "motorcycle",
+    // "4-1": "bicycle",
+    // "5-0": "pedestrian",
     // "5-1": "street_cone",
   };
   material = null;
@@ -182,11 +184,7 @@ export default class bevImgContorl {
     try {
       return new Promise(async (resolve, reject) => {
         if (data.bevs_point) {
-          // this.setPoints(data.bevs_point);
-          // console.log(Date.now(), "pppppppppp0000000000000000", data.key);
           await this.handleLine(data.bevs_point);
-          // await this.handleLine(await this.handleBevLines(data.bevs_point));
-          // console.log(Date.now(), "pppppppppp111111111111", data.key);
         }
 
         if (data.objs) {
@@ -444,7 +442,7 @@ export default class bevImgContorl {
       const matLine = this.track(
         new LineMaterial({
           color: color,
-          linewidth: 2,
+          linewidth: 4,
           dashed: false,
           vertexColors: false,
         })
@@ -466,7 +464,29 @@ export default class bevImgContorl {
       let group = this.objs[`${type}_group`],
         // tags = this.objs[`${type}_tags`],
         model = this.objs[type];
-
+      //   if (group.children.length != 0) {
+      //     for (let j = 0; j < group.children.length; j++) {
+      //       this.scene.remove(group.children[j]);
+      //       this.dispose3D(group.children[j]);
+      //       group.remove(group.children[j]);
+      //     }
+      //     this.scene.remove(group);
+      //     group.clear();
+      //   }
+      //   for (let i = 0; i < data.length; i++) {
+      //     let point = data[i];
+      //     if (point[0] !== -1 && point[1] !== -1) {
+      //       let c_model = model.scene.clone();
+      //       c_model.matrixAutoUpdate = true;
+      //       c_model.position.set(-point[1], point[0], 0);
+      //       c_model.rotation.y =
+      //         THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(point[9])) +
+      //         this.objs[`${type}_rot`];
+      //       group.add(c_model);
+      //     }
+      //   }
+      //   this.scene.add(group);
+      // return;
       if (data.length <= 0) {
         if (group.children.length > 50) {
           console.log("大于50---objs00000");
@@ -474,13 +494,10 @@ export default class bevImgContorl {
             this.scene.remove(group.children[j]);
             this.dispose3D(group.children[j]);
             group.remove(group.children[j]);
-            // this.scene.remove(tags.children[j]);
-            // tags.remove(tags.children[j]);
           }
         } else {
           for (let j = data.length; j < group.children.length; j++) {
             group.children[j].position.set(100, 100, 0);
-            // tags.children[j].position.copy(group.children[j].position);
           }
         }
         return;
@@ -497,17 +514,8 @@ export default class bevImgContorl {
               THREE.MathUtils.degToRad(THREE.MathUtils.radToDeg(point[9])) +
               this.objs[`${type}_rot`];
             group.add(c_model);
-            // this.handler.label3DSprite = this.tag3DSprite(point[12]);
-            // c_model.getWorldPosition(this.handler.pos3);
-            // this.handler.pos3.z = point[5] + 1;
-            // this.handler.pos3.y -= 16;
-            // this.handler.label3DSprite.position.copy(this.handler.pos3);
-            // tags.add(this.handler.label3DSprite);
-            // this.handler.label3DSprite = null;
-            // this.handler.pos3 = new THREE.Vector3();
           }
         }
-        // this.scene.add(tags);
         this.scene.add(group);
       } else {
         if (group.children.length >= data.length) {
@@ -630,6 +638,7 @@ export default class bevImgContorl {
     this.scene = new THREE.Scene();
     let rect = this.rgb_data.dom.getBoundingClientRect();
     this.dom_width =
+      // (rect.width * document.documentElement.clientWidth) / 1440 - 26;
       (rect.width * document.documentElement.clientWidth) / 1080 - 26;
     this.dom_height =
       (rect.height * document.documentElement.clientWidth) / 1080 - 26;
@@ -728,9 +737,9 @@ export default class bevImgContorl {
         "bus",
         "trailer",
         "barrier",
-        "motorcycle",
-        "bicycle",
-        "pedestrian",
+        // "motorcycle",
+        // "bicycle",
+        // "pedestrian",
         // "street_cone",
       ];
       const res = await Promise.all(filesArr.map(this.loadFile));
@@ -758,7 +767,7 @@ export default class bevImgContorl {
           // gltf.scale.set(s, s, s);
         } else if (item.id === "truck") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
+          gltf.rotation.y = Math.PI / 2;
           gltf.position.y = -100;
           gltf.position.x = -100;
           size = this.ge3Dsize(gltf);
@@ -772,10 +781,10 @@ export default class bevImgContorl {
           size = this.ge3Dsize(gltf);
           
           s = 2.5 / size.x;
-          gltf.scale.set(0.55, 0.55, 0.55);
+          gltf.scale.set(0.58, 0.58, 0.58);
         } else if (item.id === "trailer") {
           gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI;
+          gltf.rotation.y = Math.PI / 2;
           gltf.position.y = -130;
           gltf.position.x = -130;
           size = this.ge3Dsize(gltf);
@@ -786,35 +795,38 @@ export default class bevImgContorl {
           gltf.position.x = -100;
           gltf.position.y = -140;
           // gltf.scale.set(2,2,2);
-        } else if (item.id === "motorcycle") {
-          gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI / 2;
-          gltf.position.x = 100;
-          gltf.position.y = 120;
-          // size = this.ge3Dsize(gltf);
-          // s = 0.98 / size.x;
-          // gltf.scale.set(s, s, s);
-          gltf.scale.set(1.6, 1.6, 1.6);
-        } else if (item.id === "bicycle") {
-          gltf.rotation.x = Math.PI / 2;
-          gltf.rotation.y = Math.PI / 2;
-          gltf.position.x = 120;
-          gltf.position.y = 130;
-          // size = this.ge3Dsize(gltf);
-          // s = 1 / size.x;
-          // gltf.scale.set(s, s, s);
-          // gltf.scale.set(0.02, 0.02, 0.02);
-          gltf.scale.set(1.8, 1.8, 1.8);
-        } else if (item.id === "pedestrian") {
-          gltf.rotation.x = Math.PI / 2;
-          // gltf.rotation.y = Math.PI / 2 + Math.PI / 3;
-          gltf.position.x = 120;
-          gltf.position.y = 110;
-          size = this.ge3Dsize(gltf);
-          s = 3 / size.z;
-          // gltf.scale.set(0.5, 0.5, 0.5);
-          gltf.scale.set(s, s, s);
-        }
+        } 
+        // else if (item.id === "motorcycle") {
+        //   gltf.rotation.x = Math.PI / 2;
+        //   gltf.rotation.y = Math.PI / 2;
+        //   gltf.position.x = 100;
+        //   gltf.position.y = 120;
+        //   // size = this.ge3Dsize(gltf);
+        //   // s = 0.98 / size.x;
+        //   // gltf.scale.set(s, s, s);
+        //   gltf.scale.set(1.6, 1.6, 1.6);
+        // } 
+        // else if (item.id === "bicycle") {
+        //   gltf.rotation.x = Math.PI / 2;
+        //   gltf.rotation.y = Math.PI / 2;
+        //   gltf.position.x = 120;
+        //   gltf.position.y = 130;
+        //   // size = this.ge3Dsize(gltf);
+        //   // s = 1 / size.x;
+        //   // gltf.scale.set(s, s, s);
+        //   // gltf.scale.set(0.02, 0.02, 0.02);
+        //   gltf.scale.set(1.8, 1.8, 1.8);
+        // } 
+        // else if (item.id === "pedestrian") {
+        //   gltf.rotation.x = Math.PI / 2;
+        //   // gltf.rotation.y = Math.PI / 2 + Math.PI / 3;
+        //   gltf.position.x = 120;
+        //   gltf.position.y = 110;
+        //   size = this.ge3Dsize(gltf);
+        //   s = 3 / size.z;
+        //   // gltf.scale.set(0.5, 0.5, 0.5);
+        //   gltf.scale.set(s, s, s);
+        // }
         // else if (item.id === "street_cone") {
         //   gltf.rotation.x = Math.PI / 2;
         //   gltf.rotation.y = Math.PI / 2;

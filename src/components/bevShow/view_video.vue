@@ -5,6 +5,7 @@
 <template>
   <div class="video_box">
     <div class="handle_box" :id="props.video_id + '_box'">
+      <div class="v_text">{{ v_texts[props.video_id] }}</div>
       <canvas
         class="handle_box_canvas"
         :id="props.video_id + '_helper_box'"
@@ -23,7 +24,14 @@ import {
   ref,
 } from "vue";
 import VIDEO from "@/controls/video/video.js";
-
+const v_texts = {
+  foresight: "前视",
+  rearview: "后视",
+  right_front: "右前",
+  right_back: "右后",
+  left_back: "左后",
+  left_front: "左前",
+}
 const props = defineProps(["video_id"]);
 const emits = defineEmits(["updataVideoStatus"]);
 let yh_video = ref(null),
@@ -112,10 +120,10 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: pink;
+  //justify-content: center;
+  // background: pink;
   .handle_box_canvas {
-    // width: 100%;
+    //width: 100%;
     height: 100%;
     color: rgb(255, 255, 0);
     position: absolute;
@@ -123,7 +131,21 @@ onUnmounted(() => {
     // left: 0;
     transform-origin: 0 0;
     z-index: 1;
-    border-radius: 5px;
+    border-radius: 3px;
   }
+}
+.v_text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  font-size: 10px;
+  color: #fff;
+  padding: 1px 3px;
+  border-radius: 3px 0 3px 0;
+  background: rgba(0, 0, 0, .6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

@@ -47,7 +47,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
         //   console.log(Date.now() - old, "ppppppp");
         //   old = Date.now();
         // }
-        // console.log(object[0], "object", Date.now());
+        // console.log(object, "object", Date.now());
         // return
         f_buffer = setBuffer(object[1][0]);
         f_buffer.set(object[1][0]);
@@ -86,6 +86,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
       if (object[2][1] != 0) {
         // console.log(Date.now(), "000000000", object[0]);
         saf = await handleVO(object[2], object[4]);
+        // console.log(object, "object", Date.now());
         // console.log(Date.now(), "11111111111", object[0]);
         postMessage({
           // bp: object[5],
@@ -124,21 +125,21 @@ function handleBevLines(data) {
     bev_lines = [];
     data.forEach(async (item, index) => {
       line_points = new Float32Array(200 * 3);
-      if (isLine(item[1])) {
-        line_arr = [item[1][0], item[1][item[1].length - 1]];
-        line_sign = isLineTooShort(line_arr);
-        if (line_sign) {
-          line_arr = sort_arr;
-        }
-        bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
-      } else {
+      // if (isLine(item[1])) {
+      //   line_arr = [item[1][0], item[1][item[1].length - 1]];
+      //   line_sign = isLineTooShort(line_arr);
+      //   if (line_sign) {
+      //     line_arr = sort_arr;
+      //   }
+      //   bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
+      // } else {
         line_sign = isLineTooShort(item[1]);
         line_arr = item[1];
         if (line_sign) {
           line_arr = sort_arr;
         }
         bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
-      }
+      // }
     });
     resolve(bev_lines);
   });
