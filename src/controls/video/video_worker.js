@@ -30,6 +30,7 @@ self.onmessage = async (e) => {
 let saf;
 let f_u8, r_u8, rf_u8, rb_u8, lf_u8, lb_u8;
 let old;
+let num_objs = 0;
 const webSocketInit = (reconnect, webSocketInit) => {
   ws = new WebSocket("ws://192.168.1.66:1234");
   ws.binaryType = "arraybuffer";
@@ -40,6 +41,7 @@ const webSocketInit = (reconnect, webSocketInit) => {
   ws.onmessage = async (e) => {
     if (e.data instanceof ArrayBuffer) {
       let object = decode(e.data);
+      // console.log(object, "object");
       if (object[1].length > 0) {
         // if (!old) {
         //   old = Date.now();
@@ -88,15 +90,27 @@ const webSocketInit = (reconnect, webSocketInit) => {
         saf = await handleVO(object[2], object[4]);
         // console.log(object, "object", Date.now());
         // console.log(Date.now(), "11111111111", object[0]);
-        postMessage({
-          // bp: object[5],
-          bp: await handleBevLines(object[5]),
-          objs: await handleObjs(object[4]),
-          // objs: saf.bev_objs,
-          v_objs: saf.v_objs,
-          key: object[0],
-          sign: "bev",
-        });
+        if (num_objs < 3) {
+          postMessage({
+            // bp: object[5],
+            bp: await handleBevLines(object[5]),
+            objs: await handleObjs(object[4]),
+            // objs: saf.bev_objs,
+            v_objs: saf.v_objs,
+            key: object[0],
+            sign: "bev",
+          });
+          num_objs++;
+        }else {
+          // console.log("ppp");
+          postMessage({
+            objs: await handleObjs(object[4]),
+            v_objs: saf.v_objs,
+            key: object[0],
+            sign: "bev",
+          });
+          num_objs = 0;
+        }
       }
     }
   };
@@ -133,11 +147,13 @@ function handleBevLines(data) {
       //   }
       //   bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
       // } else {
-        line_sign = isLineTooShort(item[1]);
         line_arr = item[1];
-        if (line_sign) {
-          line_arr = sort_arr;
-        }
+        // if (item[0] != 2) {
+          line_sign = isLineTooShort(item[1]);
+          if (line_sign) {
+            line_arr = sort_arr;
+          }
+        // }
         bev_lines.push([item[0], handleBevPoints(line_points, line_arr)]);
       // }
     });

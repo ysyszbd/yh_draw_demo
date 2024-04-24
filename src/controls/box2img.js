@@ -313,14 +313,15 @@ export function handleObjs(objs_data) {
     resolve(obj_index);
   });
 }
+let year, month, day, hour, minute, second;
 export function formaData(timer) {
   return new Promise((resolve, reject) => {
-    const year = timer.getFullYear();
-    const month = timer.getMonth() + 1; // 由于月份从0开始，因此需加1
-    const day = timer.getDate();
-    const hour = timer.getHours();
-    const minute = timer.getMinutes();
-    const second = timer.getSeconds();
+    year = timer.getFullYear();
+    month = timer.getMonth() + 1; // 由于月份从0开始，因此需加1
+    day = timer.getDate();
+    hour = timer.getHours();
+    minute = timer.getMinutes();
+    second = timer.getSeconds();
     resolve(
       `${pad(year, 4)}-${pad(month)}-${pad(day)} ${pad(hour)}:${pad(
         minute
@@ -401,9 +402,9 @@ export function calculateDistance(x1, y1, x2, y2) {
 }
 // 处理bev矢量坐标数据，集合成threejs可以直接使用的坐标
 let point0;
-export function handleBevPoints(points, arr) {
+export function handleBevPoints(points, arr, num = 6) {
   for (let i = 0; i < points.length; i += 3) {
-    point0 = arr[i * 6];
+    point0 = arr[i * num];
     if (point0) {
       points[i + 0] = -point0[1];
       points[i + 1] = point0[0];

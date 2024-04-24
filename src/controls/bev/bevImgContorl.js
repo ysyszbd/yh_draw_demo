@@ -185,42 +185,16 @@ export default class bevImgContorl {
       return new Promise(async (resolve, reject) => {
         if (data.bevs_point) {
           await this.handleLine(data.bevs_point);
-        }
-
-        if (data.objs) {
           await this.handleObjs(data.objs);
         }
+
+        // if (data.objs) {
+        // }
         resolve("ppp");
       });
     } catch (err) {
       console.log(err, "err---getData");
     }
-  }
-  // 处理bev线条数据--直线与曲线分开处理，去掉过短的线条
-  handleBevLines(data) {
-    return new Promise(async (resolve, reject) => {
-      this.bev_lines = [];
-      let arr;
-      data.forEach(async (item, index) => {
-        this.points = new Float32Array(200 * 3);
-        if (isLine(item[1])) {
-          arr = [item[1][0], item[1][item[1].length - 1]];
-          let sign = isLineTooShort(arr);
-          if (sign) {
-            arr = this.sort_arr;
-          }
-          this.bev_lines.push([item[0], handleBevPoints(this.points, arr)]);
-        } else {
-          let sign = isLineTooShort(item[1]);
-          arr = item[1];
-          if (sign) {
-            arr = this.sort_arr;
-          }
-          this.bev_lines.push([item[0], handleBevPoints(this.points, arr)]);
-        }
-      });
-      resolve(this.bev_lines);
-    });
   }
   drawBev(bev) {
     return new Promise((resolve, reject) => {
@@ -385,6 +359,7 @@ export default class bevImgContorl {
             this.lines.group.children[i].material.color.set(
               this.lineColors[bev_points[i][0]]
             );
+            // this.lines.group.children[i].computeLineDistances();
             this.lines.group.children[i].material.needsUpdate = true;
           }
           for (
@@ -398,6 +373,7 @@ export default class bevImgContorl {
             this.lines.group.children[
               j
             ].geometry.attributes.position.needsUpdate = true;
+            // this.lines.group.children[j].computeLineDistances();
           }
         } else {
           for (let i = 0; i < this.lines.group.children.length; i++) {
@@ -410,6 +386,10 @@ export default class bevImgContorl {
             this.lines.group.children[i].material.color.set(
               this.lineColors[bev_points[i][0]]
             );
+            // this.lines.group.children[i].material.dashed.set(
+            //   true
+            // );
+            // this.lines.group.children[i].computeLineDistances();
             this.lines.group.children[i].material.needsUpdate = true;
           }
           for (
@@ -443,7 +423,7 @@ export default class bevImgContorl {
         new LineMaterial({
           color: color,
           linewidth: 4,
-          dashed: false,
+          // dashed: true,
           vertexColors: false,
         })
       );

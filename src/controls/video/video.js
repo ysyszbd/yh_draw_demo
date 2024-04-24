@@ -76,6 +76,7 @@ export default class Video {
   }
   async drawVideo(data) {
     return new Promise(async (resolve, reject) => {
+      // console.log(data, "data");
       // 使用canvas外部的元素来控制canvas的大小
       if (this.helper_dom.width != 960 || this.helper_dom.height != 480) {
         this.helper_dom.width = 960;

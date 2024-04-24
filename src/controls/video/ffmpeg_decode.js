@@ -181,6 +181,7 @@ async function decodeArray(u8Array, key, view) {
     // let a =
     // imageBitmap = await drawVideoBg(cv.remap(img_mat.data.set(rgbData), dst, mapx, mapy, cv.INTER_NEAREST), key, view);
     imageBitmap = await drawVideoBg(rgbObj, key, view);
+    // console.log(imageBitmap);
     // if (view === "foresight") {
     //   if (d_num <= 500) {
     //     d_tem = Date.now() - d_old_t + d_tem;
@@ -251,12 +252,12 @@ function drawVideoBg(info, key, view) {
     src = imageDataToMat(imgData);
     cv.remap(src, dst, mapx, mapy, cv.INTER_NEAREST, cv.BORDER_CONSTANT);
     v_context.putImageData(matToImageData(dst), 0, 0);
-    // v_context.putImageData(imgData, 0, 0);
-    v_context.fillStyle = "white";
-    v_context.fillRect(10, 60, 250, 38);
-    v_context.font = "38px serif";
-    v_context.fillStyle = "red";
-    v_context.fillText(key, 10, 90);
+    // // v_context.putImageData(imgData, 0, 0);
+    // v_context.fillStyle = "white";
+    // v_context.fillRect(10, 60, 250, 38);
+    // v_context.font = "38px serif";
+    // v_context.fillStyle = "red";
+    // v_context.fillText(key, 10, 90);
 
     // resolve(v_context);
     resolve(v_canvas.transferToImageBitmap());
